@@ -1,0 +1,58 @@
+{
+  "app_name": "Dynamic Flutter App",
+  "login_enabled": true,
+  "home_screen": "home",
+  "version": 1,
+  "theme_mode": "system",
+  "screens": [
+    {
+      "name": "home",
+      "title": "الرئيسية",
+      "description": "هذه شاشة تجريبية يتم بناؤها من API.",
+      "components": [
+        {
+          "type": "title",
+          "text": "مرحبا"
+        },
+        {
+          "type": "text",
+          "text": "هذا التطبيق يستقبل واجهاته من السيرفر."
+        },
+        {
+          "type": "button",
+          "text": "اذهب إلى التفاصيل",
+          "action": {
+            "type": "navigate",
+            "target": "details"
+          }
+        },
+        {
+          "type": "outlined_button",
+          "text": "إعادة مزامنة",
+          "action": {
+            "type": "sync"
+          }
+        }
+      ]
+    },
+    {
+      "name": "details",
+      "title": "التفاصيل",
+      "description": "مثال على شاشة ثانية.",
+      "components": [
+        {
+          "type": "text",
+          "text": "يمكن إضافة أزرار ونصوص وصور وحقول من لوحة Flask."
+        },
+        {
+          "type": "button",
+          "text": "عودة للرئيسية",
+          "action": {
+            "type": "navigate",
+            "target": "home"
+          }
+        }
+      ]
+    }
+  ]
+}
