@@ -6,13 +6,14 @@ plugins {
 
 android {
     namespace "com.alattab.dynamicapp"
-    compileSdk 34
+    compileSdk 36
+    
     ndkVersion flutter.ndkVersion
 
     defaultConfig {
         applicationId "com.alattab.dynamicapp"
         minSdk 21
-        targetSdk 34
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
         multiDexEnabled true
