@@ -1,7 +1,7 @@
 name: dynamic_flutter_app
 description: Dynamic Flutter app that loads screens and actions from API.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
