@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_service.dart';
 import '../data/api/api_client.dart';
+import '../data/api/transfer_service.dart';
 import '../data/local/drift_store.dart';
 import '../device/capability_bridge.dart';
 import '../permissions/permission_service.dart';
@@ -27,7 +28,9 @@ class ActionEngine {
     required this.auth,
     required this.capabilities,
     PermissionService? permissions,
-  }) : permissions = permissions ?? PermissionService();
+    TransferService? transfer,
+  }) : permissions = permissions ?? PermissionService(),
+       transfer = transfer ?? TransferService(api);
 
   final ApiClient api;
   final DriftStore store;
@@ -35,6 +38,7 @@ class ActionEngine {
   final AuthService auth;
   final CapabilityBridge capabilities;
   final PermissionService permissions;
+  final TransferService transfer;
 
   Future<dynamic> execute(
     BuildContext context,
@@ -67,6 +71,27 @@ class ActionEngine {
           pathParameters: (resolved['path'] as Map?)?.cast<String, dynamic>(),
           headers: (resolved['headers'] as Map?)?.cast<String, dynamic>(),
           body: resolved['body'] ?? contextData.data,
+        );
+      case 'upload':
+        final filePath = resolved['file_path']?.toString();
+        final path = resolved['url']?.toString();
+        if (filePath == null || filePath.isEmpty || path == null || path.isEmpty) {
+          throw ArgumentError('upload action requires file_path and url');
+        }
+        return transfer.upload(
+          path: path,
+          filePath: filePath,
+          field: resolved['field']?.toString() ?? 'file',
+          fields: (resolved['fields'] as Map?)?.cast<String, dynamic>(),
+        );
+      case 'download':
+        final path = resolved['url']?.toString();
+        if (path == null || path.isEmpty) {
+          throw ArgumentError('download action requires url');
+        }
+        return transfer.download(
+          path: path,
+          fileName: resolved['file_name']?.toString(),
         );
       case 'dialog':
       case 'showDialog':
