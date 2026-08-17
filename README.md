@@ -88,6 +88,4 @@ lib/
 └── sync/           snapshot/queue/manual sync engine
 ```
 
-STAC 1.5.0 is the SDUI foundation. Its current feature set includes dynamic widgets/layouts, navigation, forms/validation, dynamic theming, caching and extension points for custom widgets/actions. citeturn411190search0turn411190search2
-
-The repository CI pins Flutter 3.44.7 for reproducible builds, matching the current stable documentation baseline available when this runtime branch was created. citeturn942322search0
+STAC 1.5.0 is the SDUI foundation used by this runtime. Flutter 3.44.7 is pinned in CI for reproducible builds.
