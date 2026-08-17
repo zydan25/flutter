@@ -76,9 +76,9 @@ class ActionEngine {
         );
       case 'snackbar':
       case 'showSnackBar':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${resolved['message'] ?? ''}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${resolved['message'] ?? ''}')));
         return null;
       case 'refresh':
       case 'sync':

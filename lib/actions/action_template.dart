@@ -7,9 +7,7 @@ class ActionTemplate {
       return value.map((item) => resolve(item, data)).toList();
     }
     if (value is Map) {
-      return value.map(
-        (key, item) => MapEntry(key, resolve(item, data)),
-      );
+      return value.map((key, item) => MapEntry(key, resolve(item, data)));
     }
     return value;
   }
