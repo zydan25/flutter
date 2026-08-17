@@ -25,10 +25,13 @@ class EventEngine {
   Future<void> connect() async {
     if (_channel != null) return;
     final session = await auth.readSession();
-    final uri = Uri.parse('${RuntimeConfig.baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}${RuntimeConfig.webSocketPath}');
-    final headers = <String, dynamic>{
-      if (session.accessToken != null) 'Authorization': 'Bearer ${session.accessToken}',
-    };
+    final base = Uri.parse('${RuntimeConfig.baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}${RuntimeConfig.webSocketPath}');
+    final uri = session.accessToken == null || session.accessToken!.isEmpty
+        ? base
+        : base.replace(queryParameters: {
+            ...base.queryParameters,
+            'access_token': session.accessToken!,
+          });
     _channel = WebSocketChannel.connect(uri, protocols: const []);
     _channel!.stream.listen((message) {
       try {
@@ -38,11 +41,6 @@ class EventEngine {
         }
       } catch (_) {}
     }, onDone: () => _channel = null, onError: (_) => _channel = null);
-    // Header support differs between web and mobile channel implementations.
-    // The server may alternatively authenticate through the initial handshake/token query.
-    if (headers.isNotEmpty) {
-      // Keep auth state available to event handlers without forcing a reconnect.
-    }
   }
 
   Future<void> disconnect() async {
@@ -51,7 +49,7 @@ class EventEngine {
   }
 
   Future<void> ack(RuntimeEvent event) async {
-    // Ack is intentionally separate from synchronization. The event engine never triggers full sync.
+    // Ack remains separate from synchronization. Events never trigger a full sync.
   }
 
   Future<void> dispose() async {
