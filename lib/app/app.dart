@@ -18,6 +18,7 @@ class ServerDrivenApp extends StatefulWidget {
     required this.eventEngine,
     required this.sync,
   });
+
   final Map<String, dynamic> manifest;
   final DriftStore store;
   final ActionEngine actionEngine;
@@ -65,8 +66,11 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
       final primary = theme['primary']?.toString();
       if (primary != null && primary.startsWith('#')) {
         final value = int.tryParse(primary.substring(1), radix: 16);
-        if (value != null)
-          scheme = ColorScheme.fromSeed(seedColor: Color(0xFF000000 | value));
+        if (value != null) {
+          scheme = ColorScheme.fromSeed(
+            seedColor: Color(0xFF000000 | value),
+          );
+        }
       }
     }
     return ThemeData(useMaterial3: true, colorScheme: scheme);
@@ -79,14 +83,18 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
 
   Map<String, dynamic>? _findScreen(String name) {
     for (final screen in _screens()) {
-      if ('${screen['name']}' == name) return screen;
+      if ('${screen['name']}' == name) {
+        return screen;
+      }
     }
     return null;
   }
 
   Map<String, dynamic> _toStac(Map<String, dynamic> screen) {
     final direct = screen['stac'];
-    if (direct is Map<String, dynamic>) return direct;
+    if (direct is Map<String, dynamic>) {
+      return direct;
+    }
     return {
       'type': 'scaffold',
       'appBar': {
@@ -101,8 +109,11 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
           'child': {
             'type': 'column',
             'children': [
-              if (screen['description'] != null)
-                {'type': 'text', 'data': '${screen['description']}'},
+              ...screen['description'] == null
+                  ? const <Map<String, dynamic>>[]
+                  : <Map<String, dynamic>>[
+                      {'type': 'text', 'data': '${screen['description']}'},
+                    ],
               ...((screen['components'] as List? ?? const [])
                   .whereType<Map<String, dynamic>>()
                   .map(_legacyComponent)),
@@ -131,13 +142,13 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
         return {
           'type': 'elevatedButton',
           'child': {'type': 'text', 'data': text},
-          if (stacAction != null) 'onPressed': stacAction,
+          ...stacAction == null ? const {} : {'onPressed': stacAction},
         };
       case 'outlined_button':
         return {
           'type': 'outlinedButton',
           'child': {'type': 'text', 'data': text},
-          if (stacAction != null) 'onPressed': stacAction,
+          ...stacAction == null ? const {} : {'onPressed': stacAction},
         };
       case 'input':
         return {
@@ -193,11 +204,12 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
         }
         final screen =
             _findScreen(name.replaceFirst('/', '')) ?? _findScreen(name);
-        if (screen == null)
+        if (screen == null) {
           return MaterialPageRoute(
             builder: (_) =>
                 const Scaffold(body: Center(child: Text('Route not found'))),
           );
+        }
         return MaterialPageRoute(
           builder: (context) =>
               Stac.fromJson(_toStac(screen), context) ??
@@ -209,6 +221,5 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   }
 }
 
-// Kept as a small adapter so callers can initialize STAC with the runtime action parser.
 Future<void> initializeStac(ActionEngine engine) =>
     Stac.initialize(actionParsers: [RuntimeActionParser(engine)]);
