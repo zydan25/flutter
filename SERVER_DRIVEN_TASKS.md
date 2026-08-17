@@ -1,16 +1,17 @@
-# Server-Driven Flutter Runtime — Master Task Board
+# Flutter Server-Driven Runtime — Master Task Board
 
 Branch: `server-driven-runtime-v2`
 PR: #2
 
-Legend: ✅ complete and verified | 🟡 implemented foundation / needs production hardening | ⬜ not complete
+Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final CI or backend integration | ⬜ not complete
 
 ## 1. Foundation
 - ✅ Layered runtime architecture
 - ✅ Flutter 3.44.8 stable / Dart 3.12.2 baseline
 - ✅ STAC 1.5.0
 - ✅ Android Kotlin 2.2.20 / AGP 8.11.1 / Gradle 8.14
-- ✅ CI: analyze + test + debug APK + artifact
+- ✅ CI: analyze + test + debug APK + artifact (last verified Run 70)
+- 🟡 CI hardened with AAB build and read-only GitHub token
 
 ## 2. STAC Runtime
 - ✅ Full screen `screen.stac` contract
@@ -18,11 +19,12 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ Dynamic theme foundation
 - ✅ STAC-native form/reference manifest
 - 🟡 Dynamic form schema/validation runtime (required, regex, ranges, conditional visibility)
-- ⬜ Form state binding to STAC widgets
-- ⬜ Remote dropdown/autocomplete options
-- ⬜ Form submit mapping and server-defined validation actions
+- 🟡 Form state/bind mapping and server-defined submission payload mapping
+- 🟡 Remote dropdown/autocomplete option source contract
+- ⬜ Render remote options directly into every STAC widget type
 - ⬜ Manifest-driven drawer/bottom navigation/tabs/deep links
-- ⬜ Resource/data binding for lists/cards/grids
+- 🟡 Resource/data binding foundation through `ResourceRepository`
+- ⬜ Full list/card/grid resource bindings and refresh policies
 - ⬜ Custom component registry for STAC gaps
 
 ## 3. API Engine
@@ -30,7 +32,8 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ headers/query/path/body
 - ✅ bearer authentication injection
 - ✅ timeout/retry
-- ⬜ typed response/error mapping
+- 🟡 typed response/error mapping (`ApiResult`)
+- 🟡 401 recovery hook for refresh/re-auth integration
 - ⬜ upload/download abstraction
 - ⬜ server-defined data sources/repositories
 
@@ -46,7 +49,7 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ Drift + SQLite
 - ✅ runtime/resource metadata
 - ✅ persisted sync queue
-- ✅ offline-first ResourceRepository foundation
+- ✅ offline-first `ResourceRepository` foundation
 - ⬜ typed application entity repositories
 - ⬜ cache TTL / stale-while-revalidate / invalidation policy
 - ⬜ repository-first dynamic screen integration
@@ -58,8 +61,9 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ queue persistence
 - ✅ versions/checksums
 - 🟡 explicit conflict policy model
-- ⬜ server acknowledgement parsing per operation
-- ⬜ partial success handling
+- 🟡 sync protocol model for acknowledged/conflict/rejected/retry/pending results
+- ⬜ server response parsing per operation in `SyncEngine`
+- ⬜ partial success handling wired to queue state
 - ⬜ conflict persistence and resolution UI
 - ⬜ durable retry/backoff/error states
 - ⬜ partial resource synchronization
@@ -67,20 +71,22 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 ## 7. Realtime / Notifications
 - ✅ WebSocket/event boundary
 - ✅ event routing categories
-- ✅ event path independent from full sync
-- 🟡 Firebase Messaging boundary
-- ⬜ reconnect/backoff
-- ⬜ event ACK protocol
+- ✅ event path independent of full sync
+- 🟡 reconnect with exponential backoff
+- 🟡 event acknowledgement client API
+- 🟡 Firebase Messaging integration boundary
 - ⬜ notification token/permission lifecycle
 - ⬜ cold-start notification action routing
+- ⬜ notification-originated workflow context
 
 ## 8. Authentication / Permissions
 - ✅ secure token storage boundary
 - ✅ access/refresh session model
 - ✅ logout
 - ✅ roles/permissions/feature flags boundary
-- ⬜ refresh-token execution
-- ⬜ 401 interception/re-authentication
+- 🟡 401 interception hook
+- 🟡 refresh-session storage lifecycle
+- ⬜ concrete refresh endpoint execution
 - ⬜ login/re-auth UX
 - ⬜ manifest-wide permission gating
 - ⬜ live permission-change application
@@ -117,13 +123,13 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ contract tests
 - ✅ action template tests
 - ✅ dynamic form validation tests
-- ✅ CI green through debug APK
-- ⬜ Drift/repository tests
-- ⬜ sync acknowledgement tests
-- ⬜ conflict tests
-- ⬜ malformed STAC tests
+- ✅ conflict policy tests
+- ✅ CI green through debug APK (Run 70)
+- ⬜ repository/Drift tests
+- ⬜ sync acknowledgement/partial-success tests
+- ⬜ malformed STAC/widget tests
 - ⬜ auth/401 tests
-- ⬜ WebSocket tests
+- ⬜ WebSocket/reconnect/ACK tests
 - ⬜ notification tests
 - ⬜ full integration suite
 
@@ -131,20 +137,20 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / needs producti
 - ✅ HTTPS/server-side authority foundations
 - ✅ secure storage foundation
 - ✅ modern Android toolchain
+- 🟡 AAB debug pipeline added; release signing still pending
 - ⬜ release signing
-- ⬜ AAB/release automation
+- ⬜ production AAB automation
 - ⬜ payload-size and logging hardening audit
 - ⬜ auth token rotation/security review
 
-## Execution priority
-1. Dynamic forms state/options/submit.
-2. Repository/data-source binding into dynamic screens.
-3. Sync response/ACK/conflict/partial-resource protocol.
-4. WebSocket reconnect + ACK + notification routing.
-5. Auth refresh/401 + permission gating.
-6. Comprehensive tests.
-7. Release AAB/signing.
-8. Flask `/runtime/*` implementation and progressive migration.
+## Next execution priority
+1. Bind resources into STAC lists/cards/grids.
+2. Wire SyncProtocol outcomes into persisted queue state and conflicts.
+3. Finish notification routing and permission lifecycle.
+4. Add repository/Drift/sync/auth/WebSocket tests.
+5. Complete navigation/deep-link and permission gates.
+6. Release signing/AAB automation.
+7. Implement Flask `/runtime/*` endpoints and migrate `/api/app-config` progressively.
 
 ## Quality Gate
 A task becomes ✅ only after implementation plus `flutter analyze`, `flutter test`, and Android debug build remain green for the relevant CI revision.
