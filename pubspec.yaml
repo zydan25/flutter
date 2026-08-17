@@ -1,7 +1,7 @@
 name: dynamic_flutter_app
 description: Server-driven Flutter Runtime Platform powered by STAC.
 publish_to: 'none'
-version: 2.1.0+1
+version: 2.1.0+2
 
 environment:
   sdk: '>=3.12.2 <4.0.0'
@@ -21,7 +21,7 @@ dependencies:
   url_launcher: ^6.3.2
   path_provider: ^2.1.5
   image_picker: ^1.2.3
-  file_picker: ^11.0.3
+  file_picker: ^12.0.0
   share_plus: ^13.3.0
   local_auth: ^3.0.2
   geolocator: ^14.0.3
