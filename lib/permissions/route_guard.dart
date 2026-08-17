@@ -19,11 +19,15 @@ class RouteGuard {
 
   bool canExecuteAction(Map<String, dynamic> action) {
     final permission = action['permission']?.toString();
-    if (permission != null && permission.isNotEmpty && !permissions.can(permission)) {
+    if (permission != null &&
+        permission.isNotEmpty &&
+        !permissions.can(permission)) {
       return false;
     }
     final feature = action['feature_flag']?.toString();
-    if (feature != null && feature.isNotEmpty && !permissions.featureEnabled(feature)) {
+    if (feature != null &&
+        feature.isNotEmpty &&
+        !permissions.featureEnabled(feature)) {
       return false;
     }
     return true;
