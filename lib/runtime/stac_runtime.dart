@@ -19,7 +19,9 @@ class RuntimeManifest {
 
   Map<String, dynamic>? screen(String name) {
     for (final item in screens) {
-      if ('${item['name']}' == name) return item;
+      if ('${item['name']}' == name) {
+        return item;
+      }
     }
     return null;
   }
@@ -49,7 +51,9 @@ class _StacRuntimeState extends State<StacRuntime> {
 
   Map<String, dynamic> _screenToStac(Map<String, dynamic> screen) {
     final direct = screen['stac'];
-    if (direct is Map<String, dynamic>) return direct;
+    if (direct is Map<String, dynamic>) {
+      return direct;
+    }
     final components = (screen['components'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_legacyComponent)
@@ -69,8 +73,11 @@ class _StacRuntimeState extends State<StacRuntime> {
             'type': 'column',
             'crossAxisAlignment': 'start',
             'children': [
-              if (screen['description'] != null)
-                {'type': 'text', 'data': '${screen['description']}'},
+              ...screen['description'] == null
+                  ? const <Map<String, dynamic>>[]
+                  : <Map<String, dynamic>>[
+                      {'type': 'text', 'data': '${screen['description']}'},
+                    ],
               ...components,
             ],
           },
@@ -140,8 +147,11 @@ class _StacRuntimeState extends State<StacRuntime> {
       final primary = theme['primary']?.toString();
       if (primary != null && primary.startsWith('#')) {
         final value = int.tryParse(primary.substring(1), radix: 16);
-        if (value != null)
-          scheme = ColorScheme.fromSeed(seedColor: Color(0xFF000000 | value));
+        if (value != null) {
+          scheme = ColorScheme.fromSeed(
+            seedColor: Color(0xFF000000 | value),
+          );
+        }
       }
     }
     return ThemeData(useMaterial3: true, colorScheme: scheme);
@@ -150,8 +160,9 @@ class _StacRuntimeState extends State<StacRuntime> {
   @override
   Widget build(BuildContext context) {
     final screen = widget.manifest.screen(_screenName);
-    if (screen == null)
+    if (screen == null) {
       return const Scaffold(body: Center(child: Text('Screen not found')));
+    }
     return Theme(
       data: _theme(),
       child:
