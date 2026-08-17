@@ -7,6 +7,8 @@ import '../actions/action_engine.dart';
 import '../data/local/drift_store.dart';
 import '../events/event_engine.dart';
 import '../navigation/navigation_definition.dart';
+import '../navigation/runtime_navigation_shell.dart';
+import '../permissions/permission_service.dart';
 import '../runtime/resource_binding.dart';
 import '../runtime/runtime_action_parser.dart';
 import '../settings/settings_screen.dart';
@@ -19,6 +21,7 @@ class ServerDrivenApp extends StatefulWidget {
     required this.actionEngine,
     required this.eventEngine,
     required this.sync,
+    this.permissions,
   });
 
   final Map<String, dynamic> manifest;
@@ -26,6 +29,7 @@ class ServerDrivenApp extends StatefulWidget {
   final ActionEngine actionEngine;
   final EventEngine eventEngine;
   final dynamic sync;
+  final PermissionService? permissions;
 
   @override
   State<ServerDrivenApp> createState() => _ServerDrivenAppState();
@@ -36,20 +40,32 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   StreamSubscription? _events;
   Map<String, dynamic> _resources = const {};
   late final NavigationDefinition _navigation;
+  late final PermissionService _permissions;
 
   @override
   void initState() {
     super.initState();
     _navigation = NavigationDefinition.fromManifest(widget.manifest);
+    _permissions = widget.permissions ??
+        PermissionService(
+          grants: (widget.manifest['permissions'] as Map?)
+              ?.cast<String, dynamic>(),
+        );
     _loadResources();
     _events = widget.eventEngine.events.listen((event) {
       switch (event.type) {
         case 'force_logout':
           widget.actionEngine.auth.clear();
           break;
-        case 'notification':
         case 'permission.changed':
+          final grants = event.data['permissions'];
+          if (grants is Map) {
+            _permissions.update(grants.cast<String, dynamic>());
+            if (mounted) setState(() {});
+          }
+          break;
         case 'feature_flag.changed':
+        case 'notification':
         case 'config.updated':
         case 'entity.updated':
         case 'entity.deleted':
@@ -91,8 +107,12 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
           .toList();
 
   Map<String, dynamic>? _findScreen(String name) {
+    final normalized = name.startsWith('/') ? name.substring(1) : name;
     for (final screen in _screens()) {
-      if ('${screen['name']}' == name) return screen;
+      if ('${screen['name']}' == normalized ||
+          '/${screen['name']}' == name) {
+        return screen;
+      }
     }
     return null;
   }
@@ -191,6 +211,27 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
     }
   }
 
+  Widget _screenWidget(BuildContext context, String route) {
+    final screen = _findScreen(route);
+    if (screen == null) {
+      return const Scaffold(body: Center(child: Text('Screen not found')));
+    }
+    return Stac.fromJson(_toStac(screen), context) ?? const SizedBox.shrink();
+  }
+
+  Widget _home(BuildContext context, String initial) {
+    final hasShell =
+        _navigation.drawer.isNotEmpty || _navigation.bottom.length > 1;
+    if (!hasShell) return _screenWidget(context, initial);
+    return RuntimeNavigationShell(
+      navigation: _navigation,
+      initialRoute: initial,
+      canAccess: (route, permission) =>
+          _permissions.canNavigate({'route': route, 'permission': permission}),
+      builder: _screenWidget,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final home = '${widget.manifest['home_screen'] ?? ''}';
@@ -204,18 +245,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
       theme: _theme(),
       home: initial.isEmpty
           ? const Scaffold(body: Center(child: Text('لا توجد شاشة')))
-          : Builder(
-              builder: (context) {
-                final screen = _findScreen(initial);
-                if (screen == null) {
-                  return const Scaffold(
-                    body: Center(child: Text('Screen not found')),
-                  );
-                }
-                return Stac.fromJson(_toStac(screen), context) ??
-                    const SizedBox.shrink();
-              },
-            ),
+          : Builder(builder: (context) => _home(context, initial)),
       onGenerateRoute: (settings) {
         final requested = settings.name ?? '/';
         final mapped = _navigation.resolveDeepLink(requested);
@@ -226,18 +256,21 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
                 SettingsScreen(store: widget.store, sync: widget.sync),
           );
         }
-        final screen =
-            _findScreen(name.replaceFirst('/', '')) ?? _findScreen(name);
+        final screen = _findScreen(name);
         if (screen == null) {
           return MaterialPageRoute(
             builder: (_) =>
                 const Scaffold(body: Center(child: Text('Route not found'))),
           );
         }
+        if (!_permissions.canNavigate(screen)) {
+          return MaterialPageRoute(
+            builder: (_) =>
+                const Scaffold(body: Center(child: Text('Access denied'))),
+          );
+        }
         return MaterialPageRoute(
-          builder: (context) =>
-              Stac.fromJson(_toStac(screen), context) ??
-              const SizedBox.shrink(),
+          builder: (context) => _screenWidget(context, name),
         );
       },
     );
