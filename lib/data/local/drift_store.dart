@@ -67,7 +67,10 @@ class DriftStore {
     String column,
     String definition,
   ) async {
-    final rows = await connection.executor.runSelect('PRAGMA table_info($table)');
+    final rows = await connection.executor.runSelect(
+      'PRAGMA table_info($table)',
+      const [],
+    );
     final exists = rows.any((row) => row['name'] == column);
     if (!exists) {
       await connection.executor.runCustom(
