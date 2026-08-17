@@ -155,14 +155,6 @@ class SyncEngine {
               );
             }
           }
-        } else {
-          for (final row in pending) {
-            await store.markOperation(
-              row['operation_id'] as String,
-              'acknowledged',
-            );
-            uploaded++;
-          }
         }
       }
     }
