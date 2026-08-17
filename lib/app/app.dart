@@ -6,8 +6,9 @@ import 'package:stac/stac.dart';
 import '../actions/action_engine.dart';
 import '../data/local/drift_store.dart';
 import '../events/event_engine.dart';
-import '../settings/settings_screen.dart';
+import '../runtime/resource_binding.dart';
 import '../runtime/runtime_action_parser.dart';
+import '../settings/settings_screen.dart';
 
 class ServerDrivenApp extends StatefulWidget {
   const ServerDrivenApp({
@@ -30,11 +31,14 @@ class ServerDrivenApp extends StatefulWidget {
 }
 
 class _ServerDrivenAppState extends State<ServerDrivenApp> {
+  final ResourceBindingEngine _bindings = const ResourceBindingEngine();
   StreamSubscription? _events;
+  Map<String, dynamic> _resources = const {};
 
   @override
   void initState() {
     super.initState();
+    _loadResources();
     _events = widget.eventEngine.events.listen((event) {
       switch (event.type) {
         case 'force_logout':
@@ -46,10 +50,15 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
         case 'config.updated':
         case 'entity.updated':
         case 'entity.deleted':
-          // Event routing is intentionally separate from manual full synchronization.
+          // Realtime routing remains independent of manual full synchronization.
           break;
       }
     });
+  }
+
+  Future<void> _loadResources() async {
+    final resources = await widget.store.allResources();
+    if (mounted) setState(() => _resources = resources);
   }
 
   @override
@@ -90,36 +99,47 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
 
   Map<String, dynamic> _toStac(Map<String, dynamic> screen) {
     final direct = screen['stac'];
-    if (direct is Map<String, dynamic>) {
-      return direct;
-    }
-    return {
-      'type': 'scaffold',
-      'appBar': {
-        'type': 'appBar',
-        'title': {'type': 'text', 'data': '${screen['title'] ?? 'Screen'}'},
-      },
-      'body': {
-        'type': 'singleChildScrollView',
-        'child': {
-          'type': 'padding',
-          'padding': {'left': 16, 'right': 16, 'top': 16, 'bottom': 32},
-          'child': {
-            'type': 'column',
-            'children': [
-              ...screen['description'] == null
-                  ? const <Map<String, dynamic>>[]
-                  : <Map<String, dynamic>>[
-                      {'type': 'text', 'data': '${screen['description']}'},
-                    ],
-              ...((screen['components'] as List? ?? const [])
-                  .whereType<Map<String, dynamic>>()
-                  .map(_legacyComponent)),
-            ],
-          },
-        },
-      },
-    };
+    final tree = direct is Map<String, dynamic>
+        ? direct
+        : {
+            'type': 'scaffold',
+            'appBar': {
+              'type': 'appBar',
+              'title': {
+                'type': 'text',
+                'data': '${screen['title'] ?? 'Screen'}',
+              },
+            },
+            'body': {
+              'type': 'singleChildScrollView',
+              'child': {
+                'type': 'padding',
+                'padding': {
+                  'left': 16,
+                  'right': 16,
+                  'top': 16,
+                  'bottom': 32,
+                },
+                'child': {
+                  'type': 'column',
+                  'children': [
+                    ...screen['description'] == null
+                        ? const <Map<String, dynamic>>[]
+                        : <Map<String, dynamic>>[
+                            {
+                              'type': 'text',
+                              'data': '${screen['description']}',
+                            },
+                          ],
+                    ...((screen['components'] as List? ?? const [])
+                        .whereType<Map<String, dynamic>>()
+                        .map(_legacyComponent)),
+                  ],
+                },
+              },
+            },
+          };
+    return (_bindings.bind(tree, _resources) as Map).cast<String, dynamic>();
   }
 
   Map<String, dynamic> _legacyComponent(Map<String, dynamic> component) {
@@ -188,9 +208,16 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
       home: initial.isEmpty
           ? const Scaffold(body: Center(child: Text('لا توجد شاشة')))
           : Builder(
-              builder: (context) =>
-                  Stac.fromJson(_toStac(_findScreen(initial)!), context) ??
-                  const SizedBox.shrink(),
+              builder: (context) {
+                final screen = _findScreen(initial);
+                if (screen == null) {
+                  return const Scaffold(
+                    body: Center(child: Text('Screen not found')),
+                  );
+                }
+                return Stac.fromJson(_toStac(screen), context) ??
+                    const SizedBox.shrink();
+              },
             ),
       onGenerateRoute: (settings) {
         final name = settings.name ?? '/';
@@ -214,7 +241,6 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
               const SizedBox.shrink(),
         );
       },
-      initialRoute: null,
     );
   }
 }
