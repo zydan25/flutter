@@ -21,7 +21,7 @@ class TransferService {
     return api.dio.post<dynamic>(
       path,
       data: FormData.fromMap({
-        if (fields != null) ...fields,
+        ...?fields,
         field: MultipartFile.fromFileSync(
           filePath,
           filename: filePath.split(Platform.pathSeparator).last,
