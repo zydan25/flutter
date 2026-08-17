@@ -60,8 +60,8 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ Drift + SQLite runtime store.  
 ✅ Runtime metadata/resource snapshots/sync queue.  
 ✅ Local startup without automatic sync when a snapshot exists.  
-✅ Resource repository foundation planned on top of SQLite store.  
-⬜ Full typed application repositories and data-source binding.  
+✅ Offline-first `ResourceRepository` foundation over the SQLite store.  
+⬜ Full typed application repositories and server-driven data-source binding.  
 ⬜ Cache TTL/stale/invalidation policies.  
 ⬜ Full repository-first UI data access.
 
@@ -121,7 +121,7 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ APK artifact upload.  
 ✅ Manifest validation tests.  
 ✅ Action-template tests.  
-✅ Dynamic-form validation tests.  
+✅ Dynamic-form validation tests planned in current milestone.  
 ⬜ API/repository/Drift/sync/conflict tests.  
 ⬜ STAC malformed-screen/widget tests.  
 ⬜ auth/WebSocket/notification integration tests.  
@@ -138,13 +138,14 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 
 - `lib/runtime/runtime_contract.dart` — version/schema/resource validation.
 - `lib/runtime/form_runtime.dart` — dynamic form field schema, required/regex/range validation and conditional visibility.
+- `lib/data/repositories/resource_repository.dart` — local-first resource access and queued local mutation foundation.
 - `lib/actions/action_template.dart` — server-data interpolation.
 - `assets/samples/runtime_form.json` — native STAC server-driven form reference.
 - `docs/runtime-contract.md` — bootstrap/manifest/resources/sync/events contract.
 
 ## Next execution order
 
-1. Complete offline-first `ResourceRepository` and bind dynamic screen data sources to SQLite.
+1. Bind dynamic screen resources/data sources to `ResourceRepository` so complex STAC views can operate offline-first.
 2. Complete dynamic forms: remote options, state binding, submit mapping and richer conditional rules.
 3. Implement full manual sync acknowledgement/conflict/partial-resource protocol.
 4. Harden WebSocket reconnect + event acknowledgement + notification action routing.
