@@ -56,6 +56,9 @@ jobs:
       - name: Build Android App Bundle
         run: flutter build appbundle --debug
 
+      - name: Build release Android App Bundle
+        run: flutter build appbundle --release
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -67,3 +70,9 @@ jobs:
         with:
           name: runtime-debug-aab
           path: build/app/outputs/bundle/debug/app-debug.aab
+
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
