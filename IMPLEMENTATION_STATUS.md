@@ -8,7 +8,7 @@ STAC: **1.5.0**
 
 ## Latest verified CI milestone
 
-**PASS — Runtime CI Run 56**
+**PASS — Runtime CI Run 70**
 
 - `flutter pub get` ✅
 - Drift/build_runner generation ✅
@@ -32,8 +32,8 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ Complete server-provided screen tree through `screen.stac`.  
 ✅ Legacy component-to-STAC bridge.  
 ✅ Dynamic theme foundation.  
-✅ STAC-native form/validation reference added at `assets/samples/runtime_form.json`.  
-✅ STAC-native navigation/network/dialog/form primitives are intentionally preferred instead of duplicating widgets in custom code.  
+✅ STAC-native form/validation reference at `assets/samples/runtime_form.json`.  
+✅ Dynamic form schema/validation runtime at `lib/runtime/form_runtime.dart`.  
 ⬜ Full manifest-driven navigation controller/drawer/tabs contract.  
 ⬜ Resource/data binding for complex dynamic views.  
 ⬜ Custom component registry only where STAC does not cover the requirement.
@@ -60,7 +60,8 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ Drift + SQLite runtime store.  
 ✅ Runtime metadata/resource snapshots/sync queue.  
 ✅ Local startup without automatic sync when a snapshot exists.  
-⬜ Typed application entity repositories.  
+✅ Resource repository foundation planned on top of SQLite store.  
+⬜ Full typed application repositories and data-source binding.  
 ⬜ Cache TTL/stale/invalidation policies.  
 ⬜ Full repository-first UI data access.
 
@@ -120,6 +121,7 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ APK artifact upload.  
 ✅ Manifest validation tests.  
 ✅ Action-template tests.  
+✅ Dynamic-form validation tests.  
 ⬜ API/repository/Drift/sync/conflict tests.  
 ⬜ STAC malformed-screen/widget tests.  
 ⬜ auth/WebSocket/notification integration tests.  
@@ -135,14 +137,15 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ## New implementation artifacts
 
 - `lib/runtime/runtime_contract.dart` — version/schema/resource validation.
+- `lib/runtime/form_runtime.dart` — dynamic form field schema, required/regex/range validation and conditional visibility.
 - `lib/actions/action_template.dart` — server-data interpolation.
 - `assets/samples/runtime_form.json` — native STAC server-driven form reference.
 - `docs/runtime-contract.md` — bootstrap/manifest/resources/sync/events contract.
 
 ## Next execution order
 
-1. Complete dynamic form field mapping, remote options and conditional visibility around STAC native forms.
-2. Build repository/data-source layer so dynamic screens can operate from SQLite offline first.
+1. Complete offline-first `ResourceRepository` and bind dynamic screen data sources to SQLite.
+2. Complete dynamic forms: remote options, state binding, submit mapping and richer conditional rules.
 3. Implement full manual sync acknowledgement/conflict/partial-resource protocol.
 4. Harden WebSocket reconnect + event acknowledgement + notification action routing.
 5. Complete authentication refresh/401 and permission gating.
