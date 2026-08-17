@@ -39,3 +39,4 @@ flutter:
   assets:
     - assets/samples/bootstrap_schema.json
     - assets/samples/runtime_manifest.json
+    - assets/samples/runtime_form.json
