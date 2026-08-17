@@ -11,7 +11,7 @@ class DriftStore {
   late final DatabaseConnection connection;
 
   Future<void> open() async {
-    connection = DatabaseConnection.fromExecutor(NativeDatabase(file));
+    connection = DatabaseConnection(NativeDatabase(file));
     await connection.executor.runCustom('''
       CREATE TABLE IF NOT EXISTS runtime_meta (
         key TEXT PRIMARY KEY,
