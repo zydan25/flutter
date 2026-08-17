@@ -49,7 +49,7 @@ class CapabilityBridge {
         final image = await _imagePicker.pickImage(source: ImageSource.gallery);
         return image?.path;
       case 'files':
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           allowMultiple: args['multiple'] == true,
           withData: args['with_data'] == true,
         );
@@ -74,10 +74,9 @@ class CapabilityBridge {
       case 'location':
         var serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) {
-          serviceEnabled = await Geolocator.openLocationSettings();
-          if (!serviceEnabled && !await Geolocator.isLocationServiceEnabled()) {
-            return null;
-          }
+          await Geolocator.openLocationSettings();
+          serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) return null;
         }
         var permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
@@ -113,13 +112,11 @@ class CapabilityBridge {
           height: 420,
           child: MobileScanner(
             onDetect: (capture) {
-              final code = capture.barcodes
+              final values = capture.barcodes
                   .map((barcode) => barcode.rawValue)
-                  .firstWhere(
-                    (value) => value != null && value!.isNotEmpty,
-                    orElse: () => null,
-                  );
-              if (code != null) Navigator.of(context).pop(code);
+                  .whereType<String>()
+                  .where((value) => value.isNotEmpty);
+              if (values.isNotEmpty) Navigator.of(context).pop(values.first);
             },
           ),
         ),
