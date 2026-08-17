@@ -4,8 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class PushService {
-  PushService({void Function(Map<String, dynamic>)? onAction})
-    : _onAction = onAction;
+  PushService({void Function(Map<String, dynamic>)? onAction}) : _onAction = onAction;
 
   final void Function(Map<String, dynamic>)? _onAction;
 
@@ -30,6 +29,8 @@ class PushService {
 
   void _dispatch(Map<String, dynamic> data) {
     final action = data['action'];
-    if (action is Map) _onAction?.call(action.cast<String, dynamic>());
+    if (action is Map) {
+      _onAction?.call(action.cast<String, dynamic>());
+    }
   }
 }
