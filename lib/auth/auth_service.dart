@@ -14,22 +14,29 @@ class AuthService {
   static const _refresh = 'refresh_token';
 
   Future<Session> readSession() async => Session(
-    accessToken: await storage.read(key: _access),
-    refreshToken: await storage.read(key: _refresh),
-  );
+        accessToken: await storage.read(key: _access),
+        refreshToken: await storage.read(key: _refresh),
+      );
 
   Future<void> saveSession({
     required String accessToken,
     String? refreshToken,
   }) async {
     await storage.write(key: _access, value: accessToken);
-    if (refreshToken != null) {
+    if (refreshToken != null && refreshToken.isNotEmpty) {
       await storage.write(key: _refresh, value: refreshToken);
     }
   }
+
+  Future<String?> accessToken() async => (await readSession()).accessToken;
+
+  Future<String?> refreshToken() async => (await readSession()).refreshToken;
 
   Future<void> clear() async {
     await storage.delete(key: _access);
     await storage.delete(key: _refresh);
   }
+
+  bool hasRefreshToken(Session session) =>
+      session.refreshToken != null && session.refreshToken!.isNotEmpty;
 }
