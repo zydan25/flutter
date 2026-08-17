@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_server_driven_runtime/data/local/cache_policy.dart';
+
+import '../lib/data/local/cache_policy.dart';
 
 void main() {
   test('fresh cache remains fresh inside ttl', () {
