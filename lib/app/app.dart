@@ -6,6 +6,7 @@ import 'package:stac/stac.dart';
 import '../actions/action_engine.dart';
 import '../data/local/drift_store.dart';
 import '../events/event_engine.dart';
+import '../navigation/navigation_definition.dart';
 import '../runtime/resource_binding.dart';
 import '../runtime/runtime_action_parser.dart';
 import '../settings/settings_screen.dart';
@@ -34,10 +35,12 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   final ResourceBindingEngine _bindings = const ResourceBindingEngine();
   StreamSubscription? _events;
   Map<String, dynamic> _resources = const {};
+  late final NavigationDefinition _navigation;
 
   @override
   void initState() {
     super.initState();
+    _navigation = NavigationDefinition.fromManifest(widget.manifest);
     _loadResources();
     _events = widget.eventEngine.events.listen((event) {
       switch (event.type) {
@@ -50,7 +53,6 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
         case 'config.updated':
         case 'entity.updated':
         case 'entity.deleted':
-          // Realtime routing remains independent of manual full synchronization.
           break;
       }
     });
@@ -90,9 +92,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
 
   Map<String, dynamic>? _findScreen(String name) {
     for (final screen in _screens()) {
-      if ('${screen['name']}' == name) {
-        return screen;
-      }
+      if ('${screen['name']}' == name) return screen;
     }
     return null;
   }
@@ -126,10 +126,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
                     ...screen['description'] == null
                         ? const <Map<String, dynamic>>[]
                         : <Map<String, dynamic>>[
-                            {
-                              'type': 'text',
-                              'data': '${screen['description']}',
-                            },
+                            {'type': 'text', 'data': '${screen['description']}'},
                           ],
                     ...((screen['components'] as List? ?? const [])
                         .whereType<Map<String, dynamic>>()
@@ -220,7 +217,9 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
               },
             ),
       onGenerateRoute: (settings) {
-        final name = settings.name ?? '/';
+        final requested = settings.name ?? '/';
+        final mapped = _navigation.resolveDeepLink(requested);
+        final name = mapped ?? requested;
         if (name == '/settings') {
           return MaterialPageRoute(
             builder: (_) =>
