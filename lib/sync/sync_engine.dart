@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../core/runtime_config.dart';
 import '../data/api/api_client.dart';
 import '../data/local/drift_store.dart';
+import 'retry_policy.dart';
 import 'sync_protocol.dart';
 
 class SyncResult {
@@ -22,10 +23,15 @@ class SyncResult {
 }
 
 class SyncEngine {
-  SyncEngine({required this.api, required this.store});
+  SyncEngine({
+    required this.api,
+    required this.store,
+    this.retryPolicy = const RetryPolicy(),
+  });
 
   final ApiClient api;
   final DriftStore store;
+  final RetryPolicy retryPolicy;
 
   Future<bool> hasLocalSnapshot() async =>
       (await store.meta('manifest_present')) == '1';
@@ -88,6 +94,7 @@ class SyncEngine {
               'operation': row['operation'],
               'payload': jsonDecode(row['payload'] as String),
               'base_version': row['base_version'],
+              'retry_count': row['retry_count'] ?? 0,
             },
           )
           .toList();
@@ -108,6 +115,7 @@ class SyncEngine {
             );
             if (row.isEmpty) continue;
             final operationId = row['operation_id'] as String;
+            final retryCount = int.tryParse('${row['retry_count'] ?? 0}') ?? 0;
             switch (result.status) {
               case SyncOperationStatus.acknowledged:
                 await store.markOperation(operationId, 'acknowledged');
@@ -128,10 +136,33 @@ class SyncEngine {
                 break;
               case SyncOperationStatus.conflict:
                 await store.markOperation(operationId, 'conflict');
+                await store.saveConflict(
+                  operationId: operationId,
+                  entity: '${row['entity']}',
+                  entityId: row['entity_id']?.toString(),
+                  baseVersion: int.tryParse('${row['base_version'] ?? ''}'),
+                  serverVersion: result.serverVersion,
+                  localPayload:
+                      (jsonDecode(row['payload'] as String) as Map)
+                          .cast<String, dynamic>(),
+                  serverPayload: result.conflictData ?? result.serverData,
+                );
                 conflicts++;
                 break;
               case SyncOperationStatus.retry:
-                await store.markOperation(operationId, 'retry');
+                if (retryPolicy.canRetry(retryCount)) {
+                  final nextCount = retryCount + 1;
+                  await store.scheduleRetry(
+                    operationId,
+                    retryCount: nextCount,
+                    nextRetryAt:
+                        DateTime.now().toUtc().add(retryPolicy.delayFor(retryCount)),
+                    error: result.message,
+                  );
+                } else {
+                  await store.markOperation(operationId, 'rejected');
+                  rejected++;
+                }
                 retries++;
                 break;
               case SyncOperationStatus.rejected:
