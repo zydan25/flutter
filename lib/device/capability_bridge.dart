@@ -49,19 +49,20 @@ class CapabilityBridge {
         final image = await _imagePicker.pickImage(source: ImageSource.gallery);
         return image?.path;
       case 'files':
-        final files = await FilePicker.pickFiles(
-          allowMultiple: args['multiple'] == true,
-          withData: args['with_data'] == true,
+        final multiple = args['multiple'] == true;
+        final picked = multiple
+            ? (await FilePicker.pickFiles()).files
+            : [await FilePicker.pickFile()].whereType<PlatformFile>().toList();
+        return Future.wait(
+          picked.map(
+            (file) async => <String, dynamic>{
+              'name': file.name,
+              'path': file.path,
+              if (args['with_data'] == true)
+                'bytes_length': (await file.readAsBytes()).length,
+            },
+          ),
         );
-        return files
-            .map(
-              (file) => <String, dynamic>{
-                'name': file.name,
-                'path': file.path,
-                'size': file.size,
-              },
-            )
-            .toList();
       case 'biometric':
         final canCheck = await _localAuth.canCheckBiometrics;
         final supported = await _localAuth.isDeviceSupported();
