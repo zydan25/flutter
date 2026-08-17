@@ -50,19 +50,29 @@ class CapabilityBridge {
         return image?.path;
       case 'files':
         final multiple = args['multiple'] == true;
-        final picked = multiple
-            ? (await FilePicker.pickFiles()).files
-            : [await FilePicker.pickFile()].whereType<PlatformFile>().toList();
-        return Future.wait(
-          picked.map(
-            (file) async => <String, dynamic>{
-              'name': file.name,
-              'path': file.path,
-              if (args['with_data'] == true)
-                'bytes_length': (await file.readAsBytes()).length,
-            },
-          ),
-        );
+        if (multiple) {
+          final files = await FilePicker.pickFiles();
+          return Future.wait(
+            files.map(
+              (file) async => <String, dynamic>{
+                'name': file.name,
+                'path': file.path,
+                if (args['with_data'] == true)
+                  'bytes_length': (await file.readAsBytes()).length,
+              },
+            ),
+          );
+        }
+        final file = await FilePicker.pickFile();
+        if (file == null) return <Map<String, dynamic>>[];
+        return [
+          <String, dynamic>{
+            'name': file.name,
+            'path': file.path,
+            if (args['with_data'] == true)
+              'bytes_length': (await file.readAsBytes()).length,
+          },
+        ];
       case 'biometric':
         final canCheck = await _localAuth.canCheckBiometrics;
         final supported = await _localAuth.isDeviceSupported();
@@ -116,7 +126,9 @@ class CapabilityBridge {
                   .map((barcode) => barcode.rawValue)
                   .whereType<String>()
                   .where((value) => value.isNotEmpty);
-              if (values.isNotEmpty) Navigator.of(context).pop(values.first);
+              if (values.isNotEmpty) {
+                Navigator.of(context).pop(values.first);
+              }
             },
           ),
         ),
