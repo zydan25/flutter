@@ -11,6 +11,7 @@ import '../navigation/runtime_navigation_shell.dart';
 import '../permissions/permission_service.dart';
 import '../runtime/resource_binding.dart';
 import '../runtime/runtime_action_parser.dart';
+import '../runtime/runtime_component_registry.dart';
 import '../settings/settings_screen.dart';
 
 class ServerDrivenApp extends StatefulWidget {
@@ -22,6 +23,7 @@ class ServerDrivenApp extends StatefulWidget {
     required this.eventEngine,
     required this.sync,
     this.permissions,
+    this.componentRegistry,
   });
 
   final Map<String, dynamic> manifest;
@@ -30,6 +32,7 @@ class ServerDrivenApp extends StatefulWidget {
   final EventEngine eventEngine;
   final dynamic sync;
   final PermissionService? permissions;
+  final RuntimeComponentRegistry? componentRegistry;
 
   @override
   State<ServerDrivenApp> createState() => _ServerDrivenAppState();
@@ -37,6 +40,7 @@ class ServerDrivenApp extends StatefulWidget {
 
 class _ServerDrivenAppState extends State<ServerDrivenApp> {
   final ResourceBindingEngine _bindings = const ResourceBindingEngine();
+  late final RuntimeComponentRegistry _components;
   StreamSubscription? _events;
   Map<String, dynamic> _resources = const {};
   late final NavigationDefinition _navigation;
@@ -45,6 +49,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   @override
   void initState() {
     super.initState();
+    _components = widget.componentRegistry ?? _defaultComponents();
     _navigation = NavigationDefinition.fromManifest(widget.manifest);
     _permissions = widget.permissions ??
         PermissionService(
@@ -72,6 +77,70 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
           break;
       }
     });
+  }
+
+  RuntimeComponentRegistry _defaultComponents() {
+    return RuntimeComponentRegistry(
+      builders: {
+        'info_card': (definition) => {
+          'type': 'card',
+          'child': {
+            'type': 'padding',
+            'padding': const {
+              'left': 16,
+              'right': 16,
+              'top': 16,
+              'bottom': 16,
+            },
+            'child': {
+              'type': 'column',
+              'crossAxisAlignment': 'start',
+              'children': [
+                {
+                  'type': 'text',
+                  'data': '${definition['title'] ?? ''}',
+                },
+                {
+                  'type': 'sizedBox',
+                  'height': 8,
+                },
+                {
+                  'type': 'text',
+                  'data': '${definition['message'] ?? ''}',
+                },
+              ],
+            },
+          },
+        },
+        'action_card': (definition) => {
+          final action = definition['action'];
+          return {
+            'type': 'card',
+            'child': {
+              'type': 'column',
+              'children': [
+                {
+                  'type': 'text',
+                  'data': '${definition['title'] ?? ''}',
+                },
+                {
+                  'type': 'filledButton',
+                  'child': {
+                    'type': 'text',
+                    'data': '${definition['button'] ?? 'Open'}',
+                  },
+                  if (action is Map<String, dynamic>)
+                    'onPressed': {
+                      'type': 'runtime_action',
+                      'action': action,
+                    },
+                },
+              ],
+            },
+          };
+        },
+      },
+    );
   }
 
   Future<void> _loadResources() async {
@@ -117,9 +186,21 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
     return null;
   }
 
+  dynamic _expandComponents(dynamic node) {
+    if (node is List) {
+      return node.map(_expandComponents).toList();
+    }
+    if (node is! Map) return node;
+    final map = node.cast<String, dynamic>();
+    if ('${map['type'] ?? ''}' == 'runtime_component') {
+      return _expandComponents(_components.expandNode(map));
+    }
+    return map.map((key, value) => MapEntry(key, _expandComponents(value)));
+  }
+
   Map<String, dynamic> _toStac(Map<String, dynamic> screen) {
     final direct = screen['stac'];
-    final tree = direct is Map<String, dynamic>
+    final rawTree = direct is Map<String, dynamic>
         ? direct
         : {
             'type': 'scaffold',
@@ -156,7 +237,9 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
               },
             },
           };
-    return (_bindings.bind(tree, _resources) as Map).cast<String, dynamic>();
+    final expanded = _expandComponents(rawTree);
+    return (_bindings.bind(expanded, _resources) as Map)
+        .cast<String, dynamic>();
   }
 
   Map<String, dynamic> _legacyComponent(Map<String, dynamic> component) {
