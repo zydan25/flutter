@@ -12,6 +12,7 @@ class DriftStore {
 
   Future<void> open() async {
     connection = DatabaseConnection(NativeDatabase(file));
+    await connection.ensureOpen(const _RuntimeStoreUser());
     await connection.executor.runCustom('''
       CREATE TABLE IF NOT EXISTS runtime_meta (
         key TEXT PRIMARY KEY,
@@ -273,4 +274,17 @@ class DriftStore {
   }
 
   Future<void> close() => connection.close();
+}
+
+final class _RuntimeStoreUser extends QueryExecutorUser {
+  const _RuntimeStoreUser();
+
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  Future<void> beforeOpen(
+    QueryExecutor executor,
+    OpeningDetails details,
+  ) async {}
 }
