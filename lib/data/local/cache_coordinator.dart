@@ -65,15 +65,7 @@ class CacheCoordinator<T> {
     }
   }
 
-  Future<void> invalidate() async {
-    await repository.store.saveResource(
-      id: repository.resourceId,
-      version: 0,
-      checksum: '',
-      payload: const {},
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toIso8601String(),
-    );
-  }
+  Future<void> invalidate() => repository.store.deleteResource(repository.resourceId);
 
   Future<void> _revalidate(
     Future<T?> Function() fetch,
