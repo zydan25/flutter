@@ -51,9 +51,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            minifyEnabled false
+            shrinkResources false
+        }
         release {
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
+            shrinkResources false
         }
     }
 }
