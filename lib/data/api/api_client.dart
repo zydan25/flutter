@@ -71,12 +71,13 @@ class ApiClient {
         return response;
       } on DioException catch (error) {
         last = error;
+        final unauthorizedHandler = _onUnauthorized;
         if (error.response?.statusCode == 401 &&
             retryAfterUnauthorized &&
             !unauthorizedRecovered &&
-            _onUnauthorized != null) {
+            unauthorizedHandler != null) {
           unauthorizedRecovered = true;
-          final recovered = await _onUnauthorized!();
+          final recovered = await unauthorizedHandler();
           if (recovered) {
             final refreshedToken = await _accessTokenProvider?.call();
             if (refreshedToken != null && refreshedToken.isNotEmpty) {
