@@ -25,19 +25,14 @@ class SyncConflict {
 class ConflictResolver {
   const ConflictResolver();
 
-  Map<String, dynamic> resolve(
-    SyncConflict conflict,
-  ) {
+  Map<String, dynamic> resolve(SyncConflict conflict) {
     switch (conflict.resolution) {
       case ConflictResolution.serverWins:
         return Map<String, dynamic>.from(conflict.serverData);
       case ConflictResolution.clientWins:
         return Map<String, dynamic>.from(conflict.clientData);
       case ConflictResolution.merge:
-        return {
-          ...conflict.serverData,
-          ...conflict.clientData,
-        };
+        return {...conflict.serverData, ...conflict.clientData};
       case ConflictResolution.manual:
         throw StateError(
           'Manual resolution required for ${conflict.entity}:${conflict.entityId}',

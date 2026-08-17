@@ -29,15 +29,17 @@ class FormFieldSpec {
   final List<dynamic>? options;
 
   factory FormFieldSpec.fromJson(Map<String, dynamic> json) => FormFieldSpec(
-        name: '${json['name'] ?? ''}',
-        type: '${json['type'] ?? 'text'}',
-        required: json['required'] == true,
-        min: _num(json['min']),
-        max: _num(json['max']),
-        regex: json['regex']?.toString(),
-        visibleWhen: (json['visible_when'] as Map?)?.cast<String, dynamic>(),
-        options: json['options'] is List ? List<dynamic>.from(json['options']) : null,
-      );
+    name: '${json['name'] ?? ''}',
+    type: '${json['type'] ?? 'text'}',
+    required: json['required'] == true,
+    min: _num(json['min']),
+    max: _num(json['max']),
+    regex: json['regex']?.toString(),
+    visibleWhen: (json['visible_when'] as Map?)?.cast<String, dynamic>(),
+    options: json['options'] is List
+        ? List<dynamic>.from(json['options'])
+        : null,
+  );
 
   static num? _num(dynamic value) =>
       value is num ? value : num.tryParse('$value');
@@ -49,7 +51,8 @@ class DynamicFormSpec {
   final String id;
   final List<FormFieldSpec> fields;
 
-  factory DynamicFormSpec.fromJson(Map<String, dynamic> json) => DynamicFormSpec(
+  factory DynamicFormSpec.fromJson(Map<String, dynamic> json) =>
+      DynamicFormSpec(
         id: '${json['id'] ?? 'form'}',
         fields: (json['fields'] as List? ?? const [])
             .whereType<Map>()
@@ -93,7 +96,8 @@ class DynamicFormSpec {
     if (dependsOn == null || dependsOn.isEmpty) return true;
     final actual = values[dependsOn];
     if (condition.containsKey('equals')) return actual == condition['equals'];
-    if (condition.containsKey('not_equals')) return actual != condition['not_equals'];
+    if (condition.containsKey('not_equals'))
+      return actual != condition['not_equals'];
     return actual == true;
   }
 }

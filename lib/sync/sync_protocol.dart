@@ -20,8 +20,7 @@ class SyncOperationResult {
   factory SyncOperationResult.fromJson(Map<String, dynamic> json) {
     final rawStatus = '${json['status'] ?? 'pending'}'.toLowerCase();
     final status = switch (rawStatus) {
-      'acknowledged' || 'ok' || 'accepted' =>
-        SyncOperationStatus.acknowledged,
+      'acknowledged' || 'ok' || 'accepted' => SyncOperationStatus.acknowledged,
       'conflict' => SyncOperationStatus.conflict,
       'rejected' || 'failed' => SyncOperationStatus.rejected,
       'retry' => SyncOperationStatus.retry,
@@ -50,19 +49,19 @@ class SyncResponse {
     return SyncResponse(
       operations: rawOperations is List
           ? rawOperations
-              .whereType<Map>()
-              .map(
-                (item) => SyncOperationResult.fromJson(
-                  item.cast<String, dynamic>(),
-                ),
-              )
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (item) => SyncOperationResult.fromJson(
+                    item.cast<String, dynamic>(),
+                  ),
+                )
+                .toList()
           : const [],
       resources: rawResources is List
           ? rawResources
-              .whereType<Map>()
-              .map((item) => item.cast<String, dynamic>())
-              .toList()
+                .whereType<Map>()
+                .map((item) => item.cast<String, dynamic>())
+                .toList()
           : const [],
     );
   }

@@ -46,9 +46,6 @@ void main() {
   });
 
   test('manual resolution refuses silent overwrite', () {
-    expect(
-      () => const ConflictResolver().resolve(base),
-      throwsStateError,
-    );
+    expect(() => const ConflictResolver().resolve(base), throwsStateError);
   });
 }
