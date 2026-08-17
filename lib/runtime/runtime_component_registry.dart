@@ -18,9 +18,10 @@ class RuntimeComponentRegistry {
   bool contains(String name) => _builders.containsKey(name);
 
   Map<String, dynamic> build(Map<String, dynamic> definition) {
-    final name = definition['name']?.toString() ?? definition['component']?.toString();
+    final name =
+        definition['component']?.toString() ?? definition['name']?.toString();
     if (name == null || name.isEmpty) {
-      throw ArgumentError('runtime_component requires a name');
+      throw ArgumentError('runtime_component requires a component name');
     }
     final builder = _builders[name];
     if (builder == null) {
