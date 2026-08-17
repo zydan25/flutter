@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../core/runtime_config.dart';
+import 'api_errors.dart';
 
 class ApiResult<T> {
   const ApiResult({
@@ -122,5 +123,53 @@ class ApiClient {
       data: map == null ? response.data as T? : map(response.data),
       headers: response.headers.map,
     );
+  }
+
+  Future<T> requestTyped<T>({
+    required String method,
+    required String path,
+    required T Function(dynamic value) map,
+    Map<String, dynamic>? query,
+    Map<String, dynamic>? pathParameters,
+    Map<String, dynamic>? headers,
+    dynamic body,
+    ApiError Function(dynamic data, int? statusCode)? mapError,
+  }) async {
+    try {
+      final response = await request(
+        method: method,
+        path: path,
+        query: query,
+        pathParameters: pathParameters,
+        headers: headers,
+        body: body,
+      );
+      final status = response.statusCode ?? 0;
+      if (status >= 400) {
+        final error = mapError?.call(response.data, status) ??
+            ApiError(
+              kind: 'http',
+              message: 'Request failed with status $status',
+              statusCode: status,
+              details: response.data,
+            );
+        throw ApiException(error);
+      }
+      return map(response.data);
+    } on ApiException {
+      rethrow;
+    } on DioException catch (error) {
+      final errorModel = mapError?.call(
+            error.response?.data,
+            error.response?.statusCode,
+          ) ??
+          ApiError(
+            kind: 'network',
+            message: error.message ?? 'Network request failed',
+            statusCode: error.response?.statusCode,
+            details: error.response?.data,
+          );
+      throw ApiException(errorModel);
+    }
   }
 }
