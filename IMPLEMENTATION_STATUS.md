@@ -20,6 +20,8 @@ STAC: **1.5.0**
 
 Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 
+> Note: Run 70 predates the latest task-board/conflict-test commits; those changes are queued for the next CI verification and are not marked green yet.
+
 ## Current implementation status
 
 ### Runtime architecture
@@ -33,8 +35,10 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ Dynamic theme foundation.  
 ✅ STAC-native form/validation reference.  
 ✅ Dynamic form schema/validation runtime (`lib/runtime/form_runtime.dart`).  
+🟡 Dynamic form runtime tests and richer state/options are in progress.  
 ⬜ Full manifest-driven navigation controller/drawer/tabs.  
-⬜ Complex resource/data binding in STAC trees.
+⬜ Complex resource/data binding in STAC trees.  
+⬜ Custom component registry for STAC gaps.
 
 ### API / Actions / Workflows
 ✅ Full HTTP method/parameter/auth/retry foundation.  
@@ -56,7 +60,8 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ✅ Version/checksum metadata.  
 ✅ WebSocket/event boundary independent of full sync.  
 ✅ Secure auth/session foundation and permission boundary.  
-⬜ Sync acknowledgement/conflict/partial-resource protocol.  
+🟡 Explicit conflict resolution policy model added (`lib/sync/conflict_resolver.dart`).  
+⬜ Server acknowledgement/conflict/partial-resource protocol.  
 ⬜ WebSocket reconnect/ack lifecycle.  
 ⬜ Token refresh/401 interception and complete permission gating.
 
@@ -71,15 +76,20 @@ Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 ⬜ Submit/payload mapping.
 
 ### Testing / Release
-✅ Green CI: analyze + test + debug APK.  
-⬜ Repository/Drift/sync/conflict tests.  
-⬜ STAC widget/integration tests.  
+✅ Green baseline CI: analyze + test + debug APK.  
+🟡 Conflict resolver unit coverage added in `test/conflict_resolver_test.dart`; awaiting next green CI.  
+⬜ Repository/Drift/sync acknowledgement tests.  
+⬜ STAC malformed-screen/widget/integration tests.  
 ⬜ Auth/WebSocket/notification integration tests.  
 ⬜ Signed APK/AAB release pipeline.
 
 ### Backend
 ✅ Formal client contract and legacy endpoint compatibility.  
 ⬜ Actual Flask `/runtime/bootstrap`, `/manifest`, `/resources`, `/sync`, `/events/ack`, WebSocket rollout.
+
+## Master task board
+
+See `SERVER_DRIVEN_TASKS.md` for the complete machine-readable-by-humans checklist of completed, partial and remaining work.
 
 ## Next execution order
 
