@@ -29,10 +29,12 @@ Future<void> main() async {
     await events.connect();
   } catch (_) {}
 
-  final push = PushService(onAction: (action) {
-    // Push actions are routed through the same server-defined action contract.
-    // The app shell can execute them once a foreground BuildContext exists.
-  });
+  final push = PushService(
+    onAction: (action) {
+      // Push actions are routed through the same server-defined action contract.
+      // The app shell can execute them once a foreground BuildContext exists.
+    },
+  );
   await push.initialize();
 
   runApp(

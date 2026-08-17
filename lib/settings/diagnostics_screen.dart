@@ -15,7 +15,9 @@ class DiagnosticsScreen extends StatelessWidget {
       'Database version': '1',
       'Last sync': await store.meta('last_sync') ?? 'never',
       'Pending operations': '${await store.pendingCount()}',
-      'Cache': (await store.meta('manifest_present')) == '1' ? 'ready' : 'empty',
+      'Cache': (await store.meta('manifest_present')) == '1'
+          ? 'ready'
+          : 'empty',
       'API': RuntimeConfig.baseUrl,
       'WebSocket': 'independent / event-only',
       'Auth': 'secure-storage session',
@@ -29,10 +31,16 @@ class DiagnosticsScreen extends StatelessWidget {
       body: FutureBuilder<Map<String, String>>(
         future: _snapshot(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           return ListView(
             children: snapshot.data!.entries
-                .map((entry) => ListTile(title: Text(entry.key), subtitle: Text(entry.value)))
+                .map(
+                  (entry) => ListTile(
+                    title: Text(entry.key),
+                    subtitle: Text(entry.value),
+                  ),
+                )
                 .toList(),
           );
         },

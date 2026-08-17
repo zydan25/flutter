@@ -14,11 +14,14 @@ class AuthService {
   static const _refresh = 'refresh_token';
 
   Future<Session> readSession() async => Session(
-        accessToken: await storage.read(key: _access),
-        refreshToken: await storage.read(key: _refresh),
-      );
+    accessToken: await storage.read(key: _access),
+    refreshToken: await storage.read(key: _refresh),
+  );
 
-  Future<void> saveSession({required String accessToken, String? refreshToken}) async {
+  Future<void> saveSession({
+    required String accessToken,
+    String? refreshToken,
+  }) async {
     await storage.write(key: _access, value: accessToken);
     if (refreshToken != null) {
       await storage.write(key: _refresh, value: refreshToken);

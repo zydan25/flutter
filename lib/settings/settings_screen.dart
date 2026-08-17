@@ -41,10 +41,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await widget.sync.manualSync();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت المزامنة بنجاح')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تمت المزامنة بنجاح')));
       }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشلت المزامنة: $error')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشلت المزامنة: $error')));
     } finally {
       if (mounted) {
         await _load();
@@ -59,26 +64,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('الإعدادات')),
       body: ListView(
         children: [
-          const ListTile(title: Text('الحساب'), leading: Icon(Icons.person_outline)),
-          const ListTile(title: Text('الأمان'), leading: Icon(Icons.security_outlined)),
-          const ListTile(title: Text('الإشعارات'), leading: Icon(Icons.notifications_outlined)),
-          const ListTile(title: Text('المظهر'), leading: Icon(Icons.palette_outlined)),
-          const ListTile(title: Text('التخزين'), leading: Icon(Icons.storage_outlined)),
+          const ListTile(
+            title: Text('الحساب'),
+            leading: Icon(Icons.person_outline),
+          ),
+          const ListTile(
+            title: Text('الأمان'),
+            leading: Icon(Icons.security_outlined),
+          ),
+          const ListTile(
+            title: Text('الإشعارات'),
+            leading: Icon(Icons.notifications_outlined),
+          ),
+          const ListTile(
+            title: Text('المظهر'),
+            leading: Icon(Icons.palette_outlined),
+          ),
+          const ListTile(
+            title: Text('التخزين'),
+            leading: Icon(Icons.storage_outlined),
+          ),
           const Divider(),
-          ListTile(title: const Text('آخر مزامنة'), subtitle: Text(_lastSync ?? 'لا توجد')),
-          ListTile(title: const Text('العناصر المعلقة'), subtitle: Text('$_pending')),
+          ListTile(
+            title: const Text('آخر مزامنة'),
+            subtitle: Text(_lastSync ?? 'لا توجد'),
+          ),
+          ListTile(
+            title: const Text('العناصر المعلقة'),
+            subtitle: Text('$_pending'),
+          ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: FilledButton.icon(
               onPressed: _busy ? null : _sync,
-              icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.sync),
+              icon: _busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
               label: const Text('مزامنة الآن'),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.monitor_heart_outlined),
             title: const Text('التشخيص'),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DiagnosticsScreen(store: widget.store))),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DiagnosticsScreen(store: widget.store),
+              ),
+            ),
           ),
         ],
       ),

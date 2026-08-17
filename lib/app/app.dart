@@ -10,7 +10,14 @@ import '../settings/settings_screen.dart';
 import '../runtime/runtime_action_parser.dart';
 
 class ServerDrivenApp extends StatefulWidget {
-  const ServerDrivenApp({super.key, required this.manifest, required this.store, required this.actionEngine, required this.eventEngine, required this.sync});
+  const ServerDrivenApp({
+    super.key,
+    required this.manifest,
+    required this.store,
+    required this.actionEngine,
+    required this.eventEngine,
+    required this.sync,
+  });
   final Map<String, dynamic> manifest;
   final DriftStore store;
   final ActionEngine actionEngine;
@@ -58,15 +65,17 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
       final primary = theme['primary']?.toString();
       if (primary != null && primary.startsWith('#')) {
         final value = int.tryParse(primary.substring(1), radix: 16);
-        if (value != null) scheme = ColorScheme.fromSeed(seedColor: Color(0xFF000000 | value));
+        if (value != null)
+          scheme = ColorScheme.fromSeed(seedColor: Color(0xFF000000 | value));
       }
     }
     return ThemeData(useMaterial3: true, colorScheme: scheme);
   }
 
-  List<Map<String, dynamic>> _screens() => (widget.manifest['screens'] as List? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .toList();
+  List<Map<String, dynamic>> _screens() =>
+      (widget.manifest['screens'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
 
   Map<String, dynamic>? _findScreen(String name) {
     for (final screen in _screens()) {
@@ -92,7 +101,8 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
           'child': {
             'type': 'column',
             'children': [
-              if (screen['description'] != null) {'type': 'text', 'data': '${screen['description']}'},
+              if (screen['description'] != null)
+                {'type': 'text', 'data': '${screen['description']}'},
               ...((screen['components'] as List? ?? const [])
                   .whereType<Map<String, dynamic>>()
                   .map(_legacyComponent)),
@@ -112,19 +122,44 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
         : null;
     switch (type) {
       case 'title':
-        return {'type': 'text', 'data': text, 'style': {'fontSize': 24, 'fontWeight': 'bold'}};
+        return {
+          'type': 'text',
+          'data': text,
+          'style': {'fontSize': 24, 'fontWeight': 'bold'},
+        };
       case 'button':
-        return {'type': 'elevatedButton', 'child': {'type': 'text', 'data': text}, if (stacAction != null) 'onPressed': stacAction};
+        return {
+          'type': 'elevatedButton',
+          'child': {'type': 'text', 'data': text},
+          if (stacAction != null) 'onPressed': stacAction,
+        };
       case 'outlined_button':
-        return {'type': 'outlinedButton', 'child': {'type': 'text', 'data': text}, if (stacAction != null) 'onPressed': stacAction};
+        return {
+          'type': 'outlinedButton',
+          'child': {'type': 'text', 'data': text},
+          if (stacAction != null) 'onPressed': stacAction,
+        };
       case 'input':
-        return {'type': 'textField', 'decoration': {'labelText': text, 'hintText': component['hint']?.toString()}};
+        return {
+          'type': 'textField',
+          'decoration': {
+            'labelText': text,
+            'hintText': component['hint']?.toString(),
+          },
+        };
       case 'divider':
         return {'type': 'divider'};
       case 'spacer':
-        return {'type': 'sizedBox', 'height': double.tryParse('${component['height'] ?? 16}') ?? 16};
+        return {
+          'type': 'sizedBox',
+          'height': double.tryParse('${component['height'] ?? 16}') ?? 16,
+        };
       case 'image':
-        return {'type': 'image', 'url': '${component['image_url'] ?? ''}', 'fit': 'cover'};
+        return {
+          'type': 'image',
+          'url': '${component['image_url'] ?? ''}',
+          'fit': 'cover',
+        };
       default:
         return {'type': 'text', 'data': text.isEmpty ? type : text};
     }
@@ -133,23 +168,41 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   @override
   Widget build(BuildContext context) {
     final home = '${widget.manifest['home_screen'] ?? ''}';
-    final initial = home.isNotEmpty ? home : (_screens().isNotEmpty ? '${_screens().first['name']}' : '');
+    final initial = home.isNotEmpty
+        ? home
+        : (_screens().isNotEmpty ? '${_screens().first['name']}' : '');
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: '${widget.manifest['app_name'] ?? 'Server Driven App'}',
       theme: _theme(),
-      home: initial.isEmpty ? const Scaffold(body: Center(child: Text('لا توجد شاشة'))) : Builder(
-        builder: (context) => Stac.fromJson(_toStac(_findScreen(initial)!), context) ?? const SizedBox.shrink(),
-      ),
+      home: initial.isEmpty
+          ? const Scaffold(body: Center(child: Text('لا توجد شاشة')))
+          : Builder(
+              builder: (context) =>
+                  Stac.fromJson(_toStac(_findScreen(initial)!), context) ??
+                  const SizedBox.shrink(),
+            ),
       onGenerateRoute: (settings) {
         final name = settings.name ?? '/';
         if (name == '/settings') {
-          return MaterialPageRoute(builder: (_) => SettingsScreen(store: widget.store, sync: widget.sync));
+          return MaterialPageRoute(
+            builder: (_) =>
+                SettingsScreen(store: widget.store, sync: widget.sync),
+          );
         }
-        final screen = _findScreen(name.replaceFirst('/', '')) ?? _findScreen(name);
-        if (screen == null) return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Route not found'))));
-        return MaterialPageRoute(builder: (context) => Stac.fromJson(_toStac(screen), context) ?? const SizedBox.shrink());
+        final screen =
+            _findScreen(name.replaceFirst('/', '')) ?? _findScreen(name);
+        if (screen == null)
+          return MaterialPageRoute(
+            builder: (_) =>
+                const Scaffold(body: Center(child: Text('Route not found'))),
+          );
+        return MaterialPageRoute(
+          builder: (context) =>
+              Stac.fromJson(_toStac(screen), context) ??
+              const SizedBox.shrink(),
+        );
       },
       initialRoute: null,
     );
@@ -157,4 +210,5 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
 }
 
 // Kept as a small adapter so callers can initialize STAC with the runtime action parser.
-Future<void> initializeStac(ActionEngine engine) => Stac.initialize(actionParsers: [RuntimeActionParser(engine)]);
+Future<void> initializeStac(ActionEngine engine) =>
+    Stac.initialize(actionParsers: [RuntimeActionParser(engine)]);

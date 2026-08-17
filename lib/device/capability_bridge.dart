@@ -10,8 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 class CapabilityBridge {
   CapabilityBridge({ImagePicker? imagePicker, LocalAuthentication? localAuth})
-      : _imagePicker = imagePicker ?? ImagePicker(),
-        _localAuth = localAuth ?? LocalAuthentication();
+    : _imagePicker = imagePicker ?? ImagePicker(),
+      _localAuth = localAuth ?? LocalAuthentication();
 
   final ImagePicker _imagePicker;
   final LocalAuthentication _localAuth;
@@ -23,9 +23,7 @@ class CapabilityBridge {
   ) async {
     switch (capability) {
       case 'clipboard.write':
-        await Clipboard.setData(
-          ClipboardData(text: '${args['text'] ?? ''}'),
-        );
+        await Clipboard.setData(ClipboardData(text: '${args['text'] ?? ''}'));
         return true;
       case 'browser.open':
       case 'open_url':
@@ -37,7 +35,11 @@ class CapabilityBridge {
         final uriText = args['uri']?.toString();
         final title = args['title']?.toString();
         await SharePlus.instance.share(
-          ShareParams(text: text, uri: uriText == null ? null : Uri.tryParse(uriText), subject: title),
+          ShareParams(
+            text: text,
+            uri: uriText == null ? null : Uri.tryParse(uriText),
+            subject: title,
+          ),
         );
         return true;
       case 'camera':
@@ -53,19 +55,20 @@ class CapabilityBridge {
         );
         if (result == null) return null;
         return result.files
-            .map((file) => <String, dynamic>{
-                  'name': file.name,
-                  'path': file.path,
-                  'size': file.size,
-                })
+            .map(
+              (file) => <String, dynamic>{
+                'name': file.name,
+                'path': file.path,
+                'size': file.size,
+              },
+            )
             .toList();
       case 'biometric':
         final canCheck = await _localAuth.canCheckBiometrics;
         final supported = await _localAuth.isDeviceSupported();
         if (!canCheck && !supported) return false;
         return _localAuth.authenticate(
-          localizedReason:
-              '${args['reason'] ?? 'تحقق من هويتك للمتابعة'}',
+          localizedReason: '${args['reason'] ?? 'تحقق من هويتك للمتابعة'}',
           persistAcrossBackgrounding: true,
         );
       case 'location':
@@ -112,7 +115,10 @@ class CapabilityBridge {
             onDetect: (capture) {
               final code = capture.barcodes
                   .map((barcode) => barcode.rawValue)
-                  .firstWhere((value) => value != null && value!.isNotEmpty, orElse: () => null);
+                  .firstWhere(
+                    (value) => value != null && value!.isNotEmpty,
+                    orElse: () => null,
+                  );
               if (code != null) Navigator.of(context).pop(code);
             },
           ),

@@ -11,10 +11,12 @@ void main() {
   });
 
   test('permission service keeps backend as authority', () {
-    final service = PermissionService(grants: {
-      'permissions': ['customers.read'],
-      'feature_flags': {'new_home': true},
-    });
+    final service = PermissionService(
+      grants: {
+        'permissions': ['customers.read'],
+        'feature_flags': {'new_home': true},
+      },
+    );
     expect(service.can('customers.read'), isTrue);
     expect(service.can('customers.delete'), isFalse);
     expect(service.featureEnabled('new_home'), isTrue);

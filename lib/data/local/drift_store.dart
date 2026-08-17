@@ -86,10 +86,11 @@ class DriftStore {
     return jsonDecode(value as String) as Map<String, dynamic>;
   }
 
-  Future<List<Map<String, Object?>>> pendingOperations() => connection.executor.runSelect(
-        "SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC",
-        const [],
-      );
+  Future<List<Map<String, Object?>>>
+  pendingOperations() => connection.executor.runSelect(
+    "SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC",
+    const [],
+  );
 
   Future<void> enqueue({
     required String operationId,

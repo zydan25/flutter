@@ -9,7 +9,12 @@ import '../data/local/drift_store.dart';
 import '../sync/sync_engine.dart';
 
 class RuntimeServices {
-  RuntimeServices({required this.auth, required this.store, required this.api, required this.sync});
+  RuntimeServices({
+    required this.auth,
+    required this.store,
+    required this.api,
+    required this.sync,
+  });
 
   final AuthService auth;
   final DriftStore store;
@@ -24,7 +29,9 @@ class RuntimeBootstrap {
     final directory = await getApplicationSupportDirectory();
     final store = DriftStore(File('${directory.path}/runtime.db'));
     await store.open();
-    final api = ApiClient(accessTokenProvider: () async => (await auth.readSession()).accessToken);
+    final api = ApiClient(
+      accessTokenProvider: () async => (await auth.readSession()).accessToken,
+    );
     final sync = SyncEngine(api: api, store: store);
     await sync.initialSync();
     return RuntimeServices(auth: auth, store: store, api: api, sync: sync);

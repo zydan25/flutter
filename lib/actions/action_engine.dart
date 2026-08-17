@@ -38,10 +38,9 @@ class ActionEngine {
       case 'navigate':
         final route = action['route'] ?? action['target'];
         if (route is String && route.isNotEmpty) {
-          return Navigator.of(context).pushNamed(
-            route,
-            arguments: action['params'],
-          );
+          return Navigator.of(
+            context,
+          ).pushNamed(route, arguments: action['params']);
         }
         return null;
       case 'api':
@@ -69,9 +68,9 @@ class ActionEngine {
           ),
         );
       case 'snackbar':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${action['message'] ?? ''}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${action['message'] ?? ''}')));
         return null;
       case 'refresh':
       case 'sync':
@@ -80,9 +79,7 @@ class ActionEngine {
         await auth.clear();
         return null;
       case 'open_url':
-        final uri = Uri.tryParse(
-          '${action['url'] ?? action['target'] ?? ''}',
-        );
+        final uri = Uri.tryParse('${action['url'] ?? action['target'] ?? ''}');
         if (uri == null) return false;
         return launchUrl(uri, mode: LaunchMode.externalApplication);
       case 'device':

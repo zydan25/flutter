@@ -25,22 +25,34 @@ class EventEngine {
   Future<void> connect() async {
     if (_channel != null) return;
     final session = await auth.readSession();
-    final base = Uri.parse('${RuntimeConfig.baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}${RuntimeConfig.webSocketPath}');
+    final base = Uri.parse(
+      '${RuntimeConfig.baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}${RuntimeConfig.webSocketPath}',
+    );
     final uri = session.accessToken == null || session.accessToken!.isEmpty
         ? base
-        : base.replace(queryParameters: {
-            ...base.queryParameters,
-            'access_token': session.accessToken!,
-          });
+        : base.replace(
+            queryParameters: {
+              ...base.queryParameters,
+              'access_token': session.accessToken!,
+            },
+          );
     _channel = WebSocketChannel.connect(uri, protocols: const []);
-    _channel!.stream.listen((message) {
-      try {
-        final decoded = jsonDecode(message is String ? message : utf8.decode(message as List<int>));
-        if (decoded is Map<String, dynamic>) {
-          _controller.add(RuntimeEvent(type: '${decoded['type'] ?? ''}', payload: decoded));
-        }
-      } catch (_) {}
-    }, onDone: () => _channel = null, onError: (_) => _channel = null);
+    _channel!.stream.listen(
+      (message) {
+        try {
+          final decoded = jsonDecode(
+            message is String ? message : utf8.decode(message as List<int>),
+          );
+          if (decoded is Map<String, dynamic>) {
+            _controller.add(
+              RuntimeEvent(type: '${decoded['type'] ?? ''}', payload: decoded),
+            );
+          }
+        } catch (_) {}
+      },
+      onDone: () => _channel = null,
+      onError: (_) => _channel = null,
+    );
   }
 
   Future<void> disconnect() async {

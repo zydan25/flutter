@@ -4,8 +4,16 @@ import '../../core/runtime_config.dart';
 
 class ApiClient {
   ApiClient({Dio? dio, Future<String?> Function()? accessTokenProvider})
-      : _accessTokenProvider = accessTokenProvider,
-        dio = dio ?? Dio(BaseOptions(baseUrl: RuntimeConfig.baseUrl, connectTimeout: const Duration(seconds: 15), receiveTimeout: const Duration(seconds: 20)));
+    : _accessTokenProvider = accessTokenProvider,
+      dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: RuntimeConfig.baseUrl,
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 20),
+            ),
+          );
 
   final Dio dio;
   final Future<String?> Function()? _accessTokenProvider;
@@ -20,8 +28,12 @@ class ApiClient {
     int retries = 2,
   }) async {
     var resolvedPath = path;
-    for (final entry in pathParameters?.entries ?? const <MapEntry<String, dynamic>>[]) {
-      resolvedPath = resolvedPath.replaceAll('{${entry.key}}', Uri.encodeComponent('${entry.value}'));
+    for (final entry
+        in pathParameters?.entries ?? const <MapEntry<String, dynamic>>[]) {
+      resolvedPath = resolvedPath.replaceAll(
+        '{${entry.key}}',
+        Uri.encodeComponent('${entry.value}'),
+      );
     }
     final token = await _accessTokenProvider?.call();
     final mergedHeaders = <String, dynamic>{
@@ -36,12 +48,16 @@ class ApiClient {
           resolvedPath,
           data: body,
           queryParameters: query,
-          options: Options(method: method.toUpperCase(), headers: mergedHeaders),
+          options: Options(
+            method: method.toUpperCase(),
+            headers: mergedHeaders,
+          ),
         );
       } on DioException catch (error) {
         last = error;
         final status = error.response?.statusCode ?? 0;
-        final retryable = error.type == DioExceptionType.connectionTimeout ||
+        final retryable =
+            error.type == DioExceptionType.connectionTimeout ||
             error.type == DioExceptionType.receiveTimeout ||
             status >= 500;
         if (!retryable || attempt == retries) rethrow;
