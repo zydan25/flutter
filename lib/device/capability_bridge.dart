@@ -49,12 +49,11 @@ class CapabilityBridge {
         final image = await _imagePicker.pickImage(source: ImageSource.gallery);
         return image?.path;
       case 'files':
-        final result = await FilePicker.pickFiles(
+        final files = await FilePicker.pickFiles(
           allowMultiple: args['multiple'] == true,
           withData: args['with_data'] == true,
         );
-        if (result == null) return null;
-        return result.files
+        return files
             .map(
               (file) => <String, dynamic>{
                 'name': file.name,
