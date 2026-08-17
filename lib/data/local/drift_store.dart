@@ -121,6 +121,21 @@ class DriftStore {
     return jsonDecode(value as String) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> allResources() async {
+    final rows = await connection.executor.runSelect(
+      'SELECT resource_id, payload FROM resources',
+      const [],
+    );
+    final result = <String, dynamic>{};
+    for (final row in rows) {
+      final id = row['resource_id']?.toString();
+      final payload = row['payload'];
+      if (id == null || payload is! String) continue;
+      result[id] = jsonDecode(payload);
+    }
+    return result;
+  }
+
   Future<Map<String, Object?>?> resourceMetadata(String id) async {
     final rows = await connection.executor.runSelect(
       'SELECT resource_id, version, checksum, payload, updated_at FROM resources WHERE resource_id = ?',
@@ -178,7 +193,8 @@ class DriftStore {
     );
   }
 
-  Future<void> scheduleRetry(String id, {
+  Future<void> scheduleRetry(
+    String id, {
     required int retryCount,
     required DateTime nextRetryAt,
     String? error,
