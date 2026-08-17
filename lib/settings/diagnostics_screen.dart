@@ -31,8 +31,9 @@ class DiagnosticsScreen extends StatelessWidget {
       body: FutureBuilder<Map<String, String>>(
         future: _snapshot(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           return ListView(
             children: snapshot.data!.entries
                 .map(
