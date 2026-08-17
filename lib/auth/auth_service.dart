@@ -14,9 +14,9 @@ class AuthService {
   static const _refresh = 'refresh_token';
 
   Future<Session> readSession() async => Session(
-        accessToken: await storage.read(key: _access),
-        refreshToken: await storage.read(key: _refresh),
-      );
+    accessToken: await storage.read(key: _access),
+    refreshToken: await storage.read(key: _refresh),
+  );
 
   Future<void> saveSession({
     required String accessToken,
