@@ -1,22 +1,23 @@
 name: dynamic_flutter_app
-description: Dynamic Flutter app that loads screens and actions from API.
+description: Server-driven Flutter Runtime Platform powered by STAC.
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.1.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.2
-  shared_preferences: ^2.3.2
-  url_launcher: ^6.3.0
+  stac: ^1.5.0
+  http: ^1.5.0
+  shared_preferences: ^2.5.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
