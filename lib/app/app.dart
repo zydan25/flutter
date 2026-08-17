@@ -80,67 +80,69 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
   }
 
   RuntimeComponentRegistry _defaultComponents() {
-    return RuntimeComponentRegistry(
-      builders: {
-        'info_card': (definition) => {
-          'type': 'card',
-          'child': {
-            'type': 'padding',
-            'padding': const {
-              'left': 16,
-              'right': 16,
-              'top': 16,
-              'bottom': 16,
-            },
-            'child': {
-              'type': 'column',
-              'crossAxisAlignment': 'start',
-              'children': [
-                {
-                  'type': 'text',
-                  'data': '${definition['title'] ?? ''}',
-                },
-                {
-                  'type': 'sizedBox',
-                  'height': 8,
-                },
-                {
-                  'type': 'text',
-                  'data': '${definition['message'] ?? ''}',
-                },
-              ],
-            },
-          },
+    final builders = <String, RuntimeComponentBuilder>{};
+    builders['info_card'] = (definition) => {
+      'type': 'card',
+      'child': {
+        'type': 'padding',
+        'padding': const {
+          'left': 16,
+          'right': 16,
+          'top': 16,
+          'bottom': 16,
         },
-        'action_card': (definition) => {
-          final action = definition['action'];
-          return {
-            'type': 'card',
-            'child': {
-              'type': 'column',
-              'children': [
-                {
-                  'type': 'text',
-                  'data': '${definition['title'] ?? ''}',
-                },
-                {
-                  'type': 'filledButton',
-                  'child': {
-                    'type': 'text',
-                    'data': '${definition['button'] ?? 'Open'}',
-                  },
-                  if (action is Map<String, dynamic>)
-                    'onPressed': {
-                      'type': 'runtime_action',
-                      'action': action,
-                    },
-                },
-              ],
+        'child': {
+          'type': 'column',
+          'crossAxisAlignment': 'start',
+          'children': [
+            {
+              'type': 'text',
+              'data': '${definition['title'] ?? ''}',
             },
-          };
+            {
+              'type': 'sizedBox',
+              'height': 8,
+            },
+            {
+              'type': 'text',
+              'data': '${definition['message'] ?? ''}',
+            },
+          ],
         },
       },
-    );
+    };
+
+    builders['action_card'] = (definition) {
+      final action = definition['action'];
+      final button = <String, dynamic>{
+        'type': 'filledButton',
+        'child': {
+          'type': 'text',
+          'data': '${definition['button'] ?? 'Open'}',
+        },
+      };
+      if (action is Map<String, dynamic>) {
+        button['onPressed'] = {
+          'type': 'runtime_action',
+          'action': action,
+        };
+      }
+      return {
+        'type': 'card',
+        'child': {
+          'type': 'column',
+          'children': [
+            {
+              'type': 'text',
+              'data': '${definition['title'] ?? ''}',
+            },
+            button,
+          ],
+        },
+      };
+    };
+
+    return RuntimeComponentRegistry(builders: builders);
   }
 
   Future<void> _loadResources() async {
