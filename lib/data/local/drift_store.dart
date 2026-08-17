@@ -61,6 +61,15 @@ class DriftStore {
         resolved_at TEXT
       );
     ''');
+    await connection.executor.runCustom('''
+      CREATE TABLE IF NOT EXISTS runtime_errors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT,
+        message TEXT NOT NULL,
+        details TEXT,
+        created_at TEXT NOT NULL
+      );
+    ''');
   }
 
   Future<void> _ensureColumn(
@@ -112,6 +121,13 @@ class DriftStore {
            payload=excluded.payload,
            updated_at=excluded.updated_at''',
       [id, version, checksum, jsonEncode(payload), updatedAt],
+    );
+  }
+
+  Future<void> deleteResource(String id) async {
+    await connection.executor.runUpdate(
+      'DELETE FROM resources WHERE resource_id = ?',
+      [id],
     );
   }
 
@@ -271,6 +287,29 @@ class DriftStore {
       const [],
     );
     return (rows.first['c'] as int?) ?? 0;
+  }
+
+  Future<void> logError({
+    required String message,
+    String? code,
+    String? details,
+  }) async {
+    await connection.executor.runCustom(
+      'INSERT INTO runtime_errors(code,message,details,created_at) VALUES (?,?,?,?)',
+      [code, message, details, DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  Future<List<Map<String, Object?>>> recentErrors({int limit = 50}) {
+    final bounded = limit.clamp(1, 500);
+    return connection.executor.runSelect(
+      'SELECT * FROM runtime_errors ORDER BY id DESC LIMIT $bounded',
+      const [],
+    );
+  }
+
+  Future<void> clearErrors() async {
+    await connection.executor.runCustom('DELETE FROM runtime_errors');
   }
 
   Future<void> close() => connection.close();
