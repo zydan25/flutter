@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "app_name": "Server Driven Runtime",
+  "version": 1,
+  "manifest_version": 1,
+  "checksum": "sample-v1",
+  "home_screen": "home",
+  "theme": {"primary": "#4F46E5"},
+  "screens": [
+    {
+      "name": "home",
+      "stac": {
+        "type": "scaffold",
+        "appBar": {
+          "type": "appBar",
+          "title": {"type": "text", "data": "الرئيسية"}
+        },
+        "body": {
+          "type": "padding",
+          "padding": {"left": 20, "right": 20, "top": 20, "bottom": 20},
+          "child": {
+            "type": "column",
+            "children": [
+              {"type": "text", "data": "هذه شاشة كاملة قادمة من الخادم عبر STAC.", "style": {"fontSize": 22, "fontWeight": "bold"}},
+              {"type": "sizedBox", "height": 16},
+              {"type": "textField", "decoration": {"labelText": "اسم العميل", "hintText": "أدخل الاسم"}},
+              {"type": "sizedBox", "height": 16},
+              {"type": "elevatedButton", "child": {"type": "text", "data": "الإعدادات"}, "onPressed": {"type": "navigate", "routeName": "/settings"}}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
