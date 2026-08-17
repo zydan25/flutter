@@ -10,8 +10,8 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - ✅ Flutter 3.44.8 stable / Dart 3.12.2 baseline
 - ✅ STAC 1.5.0
 - ✅ Android Kotlin 2.2.20 / AGP 8.11.1 / Gradle 8.14
-- ✅ CI: analyze + test + debug APK + artifact (last verified Run 70)
-- 🟡 CI hardened with AAB build and read-only GitHub token
+- ✅ CI: analyze + test + debug APK + artifact (Run 70 verified; later runs currently re-validating the expanded stack)
+- 🟡 CI hardened with read-only GitHub token and APK+AAB build stages
 
 ## 2. STAC Runtime
 - ✅ Full screen `screen.stac` contract
@@ -23,7 +23,7 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - 🟡 Remote dropdown/autocomplete option source contract
 - ⬜ Render remote options directly into every STAC widget type
 - ⬜ Manifest-driven drawer/bottom navigation/tabs/deep links
-- 🟡 Resource/data binding foundation through `ResourceRepository`
+- 🟡 Resource/data binding foundation through `ResourceRepository` and recursive `ResourceBindingEngine`
 - ⬜ Full list/card/grid resource bindings and refresh policies
 - ⬜ Custom component registry for STAC gaps
 
@@ -60,13 +60,13 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - ✅ Settings → Sync Now
 - ✅ queue persistence
 - ✅ versions/checksums
-- 🟡 explicit conflict policy model
-- 🟡 sync protocol model for acknowledged/conflict/rejected/retry/pending results
-- ⬜ server response parsing per operation in `SyncEngine`
-- ⬜ partial success handling wired to queue state
-- ⬜ conflict persistence and resolution UI
-- ⬜ durable retry/backoff/error states
-- ⬜ partial resource synchronization
+- ✅ explicit conflict policy model (`serverWins`, `clientWins`, `merge`, `manual`)
+- ✅ sync protocol model for acknowledged/conflict/rejected/retry/pending results
+- ✅ per-operation response parsing in `SyncEngine`
+- ✅ partial-success outcomes wired to individual queue states
+- ⬜ conflict persistence/resolution UI
+- ⬜ durable retry/backoff/error-state policy
+- ✅ partial resource payload parsing/saving from sync responses
 
 ## 7. Realtime / Notifications
 - ✅ WebSocket/event boundary
@@ -88,6 +88,7 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - 🟡 refresh-session storage lifecycle
 - ⬜ concrete refresh endpoint execution
 - ⬜ login/re-auth UX
+- 🟡 route/action permission guard foundation
 - ⬜ manifest-wide permission gating
 - ⬜ live permission-change application
 
@@ -105,12 +106,12 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - ⬜ detailed error history
 
 ## 11. Versioning / Backend Contract
-- ✅ schema_version
+- ✅ `schema_version`
 - ✅ runtime/manifest/resource versions
 - ✅ checksum concepts
 - ✅ migration fallback for `/api/app-config`
 - ✅ `/runtime/*` contract documentation
-- ⬜ machine-readable JSON Schema package
+- ✅ machine-readable runtime manifest schema (`docs/runtime-schema.json`)
 - ⬜ compatibility matrix / migration policy
 - ⬜ real Flask `/runtime/bootstrap`
 - ⬜ real Flask `/runtime/manifest`
@@ -124,9 +125,10 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - ✅ action template tests
 - ✅ dynamic form validation tests
 - ✅ conflict policy tests
-- ✅ CI green through debug APK (Run 70)
+- ✅ resource binding tests
+- ✅ CI green through debug APK (Run 70 verified baseline)
 - ⬜ repository/Drift tests
-- ⬜ sync acknowledgement/partial-success tests
+- ⬜ sync acknowledgement/partial-success integration tests
 - ⬜ malformed STAC/widget tests
 - ⬜ auth/401 tests
 - ⬜ WebSocket/reconnect/ACK tests
@@ -144,13 +146,14 @@ Legend: ✅ complete and verified | 🟡 implemented foundation / awaiting final
 - ⬜ auth token rotation/security review
 
 ## Next execution priority
-1. Bind resources into STAC lists/cards/grids.
-2. Wire SyncProtocol outcomes into persisted queue state and conflicts.
-3. Finish notification routing and permission lifecycle.
-4. Add repository/Drift/sync/auth/WebSocket tests.
-5. Complete navigation/deep-link and permission gates.
-6. Release signing/AAB automation.
-7. Implement Flask `/runtime/*` endpoints and migrate `/api/app-config` progressively.
+1. Bind resources into actual STAC lists/cards/grids with refresh policies.
+2. Persist conflict metadata and add resolution UI.
+3. Complete notification token/permission and cold-start action routing.
+4. Complete refresh endpoint execution + manifest-wide permission gating.
+5. Add repository/Drift/sync/auth/WebSocket integration tests.
+6. Complete navigation/deep-link contract.
+7. Release signing/AAB automation.
+8. Implement Flask `/runtime/*` endpoints and progressively migrate `/api/app-config`.
 
 ## Quality Gate
 A task becomes ✅ only after implementation plus `flutter analyze`, `flutter test`, and Android debug build remain green for the relevant CI revision.
