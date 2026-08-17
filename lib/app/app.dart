@@ -58,7 +58,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
           widget.actionEngine.auth.clear();
           break;
         case 'permission.changed':
-          final grants = event.data['permissions'];
+          final grants = event.payload['permissions'];
           if (grants is Map) {
             _permissions.update(grants.cast<String, dynamic>());
             if (mounted) setState(() {});
