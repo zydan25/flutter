@@ -1,9 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:stac/stac.dart';
-
-import '../actions/action_engine.dart';
 
 class RuntimeManifest {
   RuntimeManifest(this.raw);
@@ -28,10 +24,9 @@ class RuntimeManifest {
 }
 
 class StacRuntime extends StatefulWidget {
-  const StacRuntime({super.key, required this.manifest, required this.actionEngine});
+  const StacRuntime({super.key, required this.manifest});
 
   final RuntimeManifest manifest;
-  final ActionEngine actionEngine;
 
   @override
   State<StacRuntime> createState() => _StacRuntimeState();
@@ -49,9 +44,8 @@ class _StacRuntimeState extends State<StacRuntime> {
   }
 
   Map<String, dynamic> _screenToStac(Map<String, dynamic> screen) {
-    final stac = screen['stac'];
-    if (stac is Map<String, dynamic>) return stac;
-    // Compatibility bridge for the old Flask schema: still builds a complete STAC screen.
+    final direct = screen['stac'];
+    if (direct is Map<String, dynamic>) return direct;
     final components = (screen['components'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_legacyComponent)
@@ -83,29 +77,15 @@ class _StacRuntimeState extends State<StacRuntime> {
   Map<String, dynamic> _legacyComponent(Map<String, dynamic> component) {
     final type = '${component['type'] ?? 'text'}';
     final text = '${component['text'] ?? ''}';
-    final action = component['action'];
-    Map<String, dynamic>? stacAction;
-    if (action is Map<String, dynamic>) {
-      final actionType = '${action['type'] ?? ''}';
-      if (actionType == 'navigate') {
-        stacAction = {'type': 'navigate', 'routeName': '${action['target'] ?? ''}'};
-      } else if (actionType == 'sync') {
-        stacAction = {'type': 'runtime_action', 'action': action};
-      } else if (actionType == 'open_url') {
-        stacAction = {'type': 'runtime_action', 'action': action};
-      } else if (actionType.isNotEmpty) {
-        stacAction = {'type': 'runtime_action', 'action': action};
-      }
-    }
     switch (type) {
       case 'title':
         return {'type': 'text', 'data': text, 'style': {'fontSize': 24, 'fontWeight': 'bold'}};
       case 'button':
-        return {'type': 'elevatedButton', 'child': {'type': 'text', 'data': text}, if (stacAction != null) 'onPressed': stacAction};
+        return {'type': 'elevatedButton', 'child': {'type': 'text', 'data': text}};
       case 'outlined_button':
-        return {'type': 'outlinedButton', 'child': {'type': 'text', 'data': text}, if (stacAction != null) 'onPressed': stacAction};
+        return {'type': 'outlinedButton', 'child': {'type': 'text', 'data': text}};
       case 'card_button':
-        return {'type': 'card', 'child': {'type': 'listTile', 'title': {'type': 'text', 'data': text}, if (stacAction != null) 'onTap': stacAction}};
+        return {'type': 'card', 'child': {'type': 'listTile', 'title': {'type': 'text', 'data': text}}};
       case 'input':
         return {'type': 'textField', 'decoration': {'hintText': component['hint']?.toString(), 'labelText': text}};
       case 'divider':
@@ -119,7 +99,7 @@ class _StacRuntimeState extends State<StacRuntime> {
     }
   }
 
-  ThemeData _theme(BuildContext context) {
+  ThemeData _theme() {
     final theme = widget.manifest.raw['theme'];
     var scheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
     if (theme is Map<String, dynamic>) {
@@ -136,18 +116,9 @@ class _StacRuntimeState extends State<StacRuntime> {
   Widget build(BuildContext context) {
     final screen = widget.manifest.screen(_screenName);
     if (screen == null) return const Scaffold(body: Center(child: Text('Screen not found')));
-
     return Theme(
-      data: _theme(context),
-      child: Builder(
-        builder: (context) => Stack(
-          children: [
-            Positioned.fill(child: Stac.fromJson(_screenToStac(screen), context) ?? const SizedBox.shrink()),
-            // Navigation is intentionally kept in the runtime shell so server screens stay whole STAC trees.
-            if (false) const SizedBox.shrink(),
-          ],
-        ),
-      ),
+      data: _theme(),
+      child: Stac.fromJson(_screenToStac(screen), context) ?? const SizedBox.shrink(),
     );
   }
 }
