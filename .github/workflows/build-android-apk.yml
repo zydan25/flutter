@@ -1,14 +1,15 @@
-name: Build Android  APK (Debug)
+name: Runtime CI
 
 on:
   push:
+    branches: [ main, server-driven-runtime-v2 ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,19 +18,34 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Set up Flutter
+      - name: Set up Flutter 3.44.7
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.44.7'
           channel: stable
           cache: true
 
-      - name: Show Flutter version
-        run: flutter --version
+      - name: Show versions
+        run: |
+          flutter --version
+          dart --version
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
 
       - name: Build APK
         run: flutter build apk --debug
@@ -37,5 +53,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: runtime-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
