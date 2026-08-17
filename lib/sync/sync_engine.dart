@@ -3,11 +3,22 @@ import 'dart:convert';
 import '../core/runtime_config.dart';
 import '../data/api/api_client.dart';
 import '../data/local/drift_store.dart';
+import 'sync_protocol.dart';
 
 class SyncResult {
-  const SyncResult({required this.changed, required this.pendingUploaded});
+  const SyncResult({
+    required this.changed,
+    required this.pendingUploaded,
+    this.conflicts = 0,
+    this.retries = 0,
+    this.rejected = 0,
+  });
+
   final int changed;
   final int pendingUploaded;
+  final int conflicts;
+  final int retries;
+  final int rejected;
 }
 
 class SyncEngine {
@@ -62,7 +73,11 @@ class SyncEngine {
 
   Future<SyncResult> manualSync() async {
     var uploaded = 0;
+    var conflicts = 0;
+    var retries = 0;
+    var rejected = 0;
     final pending = await store.pendingOperations();
+
     if (pending.isNotEmpty) {
       final ops = pending
           .map(
@@ -81,13 +96,72 @@ class SyncEngine {
         path: RuntimeConfig.syncPath,
         body: {'operations': ops},
       );
+
       if (response != null && response.statusCode == 200) {
-        for (final row in pending) {
-          await store.markOperation(
-            row['operation_id'] as String,
-            'acknowledged',
-          );
-          uploaded++;
+        final data = response.data;
+        if (data is Map<String, dynamic> && data['operations'] is List) {
+          final parsed = SyncResponse.fromJson(data);
+          for (final result in parsed.operations) {
+            final row = pending.firstWhere(
+              (item) => item['operation_id'] == result.operationId,
+              orElse: () => <String, Object?>{},
+            );
+            if (row.isEmpty) continue;
+            final operationId = row['operation_id'] as String;
+            switch (result.status) {
+              case SyncOperationStatus.acknowledged:
+                await store.markOperation(operationId, 'acknowledged');
+                uploaded++;
+                final entity = row['entity']?.toString();
+                if (entity != null && result.serverData != null) {
+                  await store.saveResource(
+                    id: entity,
+                    version: result.serverVersion ??
+                        int.tryParse('${row['base_version'] ?? 0}') ??
+                        0,
+                    checksum: '${result.serverVersion ?? ''}',
+                    payload: result.serverData!,
+                    updatedAt: DateTime.now().toUtc().toIso8601String(),
+                  );
+                }
+                break;
+              case SyncOperationStatus.conflict:
+                await store.markOperation(operationId, 'conflict');
+                conflicts++;
+                break;
+              case SyncOperationStatus.retry:
+                await store.markOperation(operationId, 'retry');
+                retries++;
+                break;
+              case SyncOperationStatus.rejected:
+                await store.markOperation(operationId, 'rejected');
+                rejected++;
+                break;
+              case SyncOperationStatus.pending:
+                await store.markOperation(operationId, 'pending');
+                break;
+            }
+          }
+          for (final resource in parsed.resources) {
+            final id = resource['resource_id'] ?? resource['id'];
+            if (id is String && id.isNotEmpty && resource['data'] is Map) {
+              await store.saveResource(
+                id: id,
+                version: int.tryParse('${resource['version'] ?? 0}') ?? 0,
+                checksum: '${resource['checksum'] ?? ''}',
+                payload: (resource['data'] as Map).cast<String, dynamic>(),
+                updatedAt: resource['updated_at']?.toString(),
+              );
+            }
+          }
+        } else {
+          for (final row in pending) {
+            await store.markOperation(
+              row['operation_id'] as String,
+              'acknowledged',
+            );
+            uploaded++;
+          }
         }
       }
     }
@@ -98,7 +172,13 @@ class SyncEngine {
     );
     if (response?.statusCode == 200 && response?.data is Map<String, dynamic>) {
       await saveManifest(response!.data as Map<String, dynamic>);
-      return SyncResult(changed: 1, pendingUploaded: uploaded);
+      return SyncResult(
+        changed: 1,
+        pendingUploaded: uploaded,
+        conflicts: conflicts,
+        retries: retries,
+        rejected: rejected,
+      );
     }
 
     response = await _requestAllowingFallback(
@@ -112,7 +192,13 @@ class SyncEngine {
       throw const FormatException('Manual sync returned invalid JSON');
     }
     await saveManifest(response.data as Map<String, dynamic>);
-    return SyncResult(changed: 1, pendingUploaded: uploaded);
+    return SyncResult(
+      changed: 1,
+      pendingUploaded: uploaded,
+      conflicts: conflicts,
+      retries: retries,
+      rejected: rejected,
+    );
   }
 
   Future<void> saveManifest(Map<String, dynamic> manifest) async {
