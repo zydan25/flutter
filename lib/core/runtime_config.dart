@@ -7,6 +7,8 @@ class RuntimeConfig {
   static const String syncPath = '/runtime/sync';
   static const String eventsAckPath = '/runtime/events/ack';
   static const String webSocketPath = '/runtime/events';
+  static const String refreshTokenPath = '/runtime/auth/refresh';
+  static const String notificationTokenPath = '/runtime/notifications/token';
 
   static const String schemaVersion = '1';
   static const String runtimeVersion = '2.0.0';
