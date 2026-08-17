@@ -18,189 +18,138 @@ STAC: **1.5.0**
 - `flutter build apk --debug` ✅
 - APK artifact upload ✅
 
-Android compatibility baseline now uses:
+Android baseline: Kotlin `2.2.20`, AGP `8.11.1`, Gradle `8.14`, Java 17 in CI.
 
-- Kotlin Gradle Plugin `2.2.20`
-- Android Gradle Plugin `8.11.1`
-- Gradle `8.14`
-- Java 17 in CI
+## What is now implemented
 
-## Implementation status
+### Runtime architecture
+✅ Layered runtime/app/core/data/sync/actions/events/auth/permissions/device/settings structure.  
+✅ Bootstrap separated from STAC rendering.  
+✅ Legacy `api/app-config` kept as migration fallback.
 
-### 1. Runtime architecture — FOUNDATION COMPLETE
-✅ Layered runtime/data/action/sync/event/auth/device/settings structure.  
-✅ Bootstrap separated from rendering.  
-⬜ Dependency injection/runtime registry hardening.
-
-### 2. STAC Server-Driven UI — PARTIAL
+### STAC Runtime
 ✅ STAC `1.5.0`.  
-✅ Entire screen can be supplied as `screen.stac`.  
-✅ Legacy component schema migration bridge.  
+✅ Complete server-provided screen tree through `screen.stac`.  
+✅ Legacy component-to-STAC bridge.  
 ✅ Dynamic theme foundation.  
-⬜ Dynamic navigation contract.  
-⬜ Server-driven forms/validation.  
-⬜ Resource/data binding for complex STAC trees.  
-⬜ Reusable custom component registry where STAC needs extensions.
+✅ STAC-native form/validation reference added at `assets/samples/runtime_form.json`.  
+✅ STAC-native navigation/network/dialog/form primitives are intentionally preferred instead of duplicating widgets in custom code.  
+⬜ Full manifest-driven navigation controller/drawer/tabs contract.  
+⬜ Resource/data binding for complex dynamic views.  
+⬜ Custom component registry only where STAC does not cover the requirement.
 
-### 3. API Engine — FOUNDATION COMPLETE
+### API Engine
 ✅ GET/POST/PUT/PATCH/DELETE.  
 ✅ Headers/query/path/body.  
 ✅ Bearer authentication injection.  
 ✅ Timeout/retry.  
-⬜ Formal response/error mapping.  
+⬜ Formal typed response/error mapping.  
 ⬜ Upload/download abstraction.  
-⬜ Server-defined data sources/repositories.
+⬜ Server-defined repositories/data sources.
 
-### 4. Action Engine — FOUNDATION COMPLETE
-✅ navigation/API/dialog/snackbar/refresh/logout/open URL/device/workflow boundaries.  
-⬜ Complete parameter interpolation and typed action context.  
-⬜ Server-defined state mutations.  
-⬜ Notification action integration.
+### Action + Workflow Engine
+✅ navigation/API/dialog/snackbar/refresh/logout/open URL/device/workflow.  
+✅ Server data interpolation using `${path.to.value}` templates.  
+✅ Typed action context merge.  
+✅ Workflow branching with `when`, result capture via `save_as`, and `on_error`.  
+⬜ Full state mutation/resource refresh contract.  
+⬜ Durable transaction/rollback semantics.  
+⬜ Notification-originated actions wired to a live navigation context.
 
-### 5. Workflow Engine — FOUNDATION COMPLETE
-✅ Sequential workflow steps.  
-⬜ Conditions/branches.  
-⬜ Validation steps.  
-⬜ Local transaction steps.  
-⬜ Retry/rollback/error branches.
-
-### 6. Drift + SQLite — RUNTIME STORE COMPLETE
+### Local Data / Offline
+✅ Drift + SQLite runtime store.  
 ✅ Runtime metadata/resource snapshots/sync queue.  
-⬜ Typed domain repository layer.  
-⬜ Explicit migration strategy/versioning.
+✅ Local startup without automatic sync when a snapshot exists.  
+⬜ Typed application entity repositories.  
+⬜ Cache TTL/stale/invalidation policies.  
+⬜ Full repository-first UI data access.
 
-### 7. Offline First — PARTIAL
-✅ Local runtime snapshot.  
-✅ Offline startup path.  
-✅ Legacy endpoint fallback.  
-⬜ Repository-first UI data access.  
-⬜ Resource stale policies.
-
-### 8. Manual-only Sync — FOUNDATION COMPLETE
-✅ Initial sync only when no local snapshot exists.  
+### Manual-only Sync
+✅ First-install bootstrap only when no local snapshot exists.  
 ✅ No startup/onResume/timer/background periodic sync.  
-✅ Manual Sync Now.  
-✅ Queue persistence.  
-✅ Version/checksum fields.  
-⬜ Server acknowledgement contract.  
+✅ Manual `Sync Now`.  
+✅ Pending queue persistence.  
+✅ Versions/checksums.  
+✅ Backend sync contract documented in `docs/runtime-contract.md`.  
+⬜ Server acknowledgement handling.  
 ⬜ Conflict resolution.  
-⬜ Partial resource sync.  
-⬜ Retry/backoff and durable failure states.
+⬜ Partial resource synchronization.  
+⬜ Retry/backoff and durable conflict/failure states.
 
-### 9. WebSocket/Event Engine — FOUNDATION COMPLETE
-✅ WebSocket boundary/event routing.  
-✅ Event types for config/entity/permission/feature/notification/logout.  
-✅ Events are independent from full sync.  
-⬜ Production reconnect/backoff.  
-⬜ Event acknowledgement endpoint.  
-⬜ Durable event handling/resource handlers.
-
-### 10. Push Notifications — FOUNDATION
+### Realtime / Notifications
+✅ WebSocket/event boundary.  
+✅ Routing for config/entity/permission/feature/notification/logout events.  
+✅ Events kept independent from full synchronization.  
 ✅ Firebase Messaging integration boundary.  
-✅ Notification-to-action routing boundary.  
-⬜ Firebase project configuration.  
-⬜ Background/cold-start handling.  
-⬜ Production token/permission lifecycle.
+⬜ Production reconnect/backoff and event acknowledgement.  
+⬜ Firebase project/background/cold-start configuration.  
+⬜ Complete notification token/permission lifecycle.
 
-### 11. Authentication — PARTIAL
-✅ Secure storage boundary.  
-✅ Session/access/refresh token model.  
+### Authentication / Permissions
+✅ Secure token storage boundary.  
+✅ Access/refresh session model.  
 ✅ Logout.  
-⬜ Refresh-token execution.  
-⬜ 401 interception.  
-⬜ Login UI/server contract.  
-⬜ Session expiry/re-auth UX.
+✅ Role/permission/feature-flag service boundaries.  
+⬜ Refresh-token execution + 401 interception.  
+⬜ Login/re-auth UX.  
+⬜ Manifest-driven UI gating for every action/screen.  
+⬜ Permission-change event application.
 
-### 12. Permissions — FOUNDATION
-✅ Role/permission service boundary.  
-✅ Feature flag boundary.  
-⬜ Manifest-driven gating on every screen/action.  
-⬜ Permission change event behavior.
-
-### 13. Dynamic Forms — NEXT MAJOR MILESTONE
-⬜ Field schema/runtime for text, number, email, phone, password, date, datetime, dropdown, radio, checkbox, switch, file, image, autocomplete, textarea.  
-⬜ Required/min/max/regex.  
-⬜ Conditional visibility/dependencies.  
-⬜ Remote options.  
-⬜ State binding/submit mapping.
-
-### 14. Device Capability Bridge — FOUNDATION
-✅ camera/gallery/files/share/clipboard/biometric/location/QR/deep-link/browser boundaries.  
-⬜ Production permission/error handling.  
+### Device Capability Bridge
+✅ camera, gallery, files, share, clipboard, biometric, location, QR, browser/deep-link boundaries.  
+⬜ Production permission/error handling audit.  
 ⬜ Upload/download integration.
 
-### 15. Cache — FOUNDATION
-✅ Persistent resource metadata/checksum/version.  
-⬜ Memory cache.  
-⬜ TTL/stale policies.  
-⬜ Explicit invalidation/resource cache policy.
-
-### 16. Settings — FOUNDATION
-✅ Account/security/notifications/appearance/storage/sync/diagnostics sections.  
-✅ Last sync/pending operations/Sync Now.  
-⬜ Functional account/security/appearance/cache controls.
-
-### 17. Diagnostics — FOUNDATION
-✅ Runtime/schema/manifest/DB/sync/cache/API/WebSocket/auth metadata.  
-⬜ Live API reachability.  
-⬜ Live WebSocket state.  
-⬜ Package/binary version.  
+### Settings / Diagnostics
+✅ Real settings shell with sync status, last sync, pending operations and diagnostics.  
+✅ Runtime/manifest/DB/cache/API/WebSocket/auth metadata.  
+⬜ Live API/WebSocket health.  
+⬜ Functional account/security/appearance/cache-management controls.  
 ⬜ Detailed error history.
 
-### 18. Versioning — PARTIAL
-✅ Runtime/schema/resource version/checksum concepts.  
-✅ Legacy API migration fallback.  
-⬜ Compatibility matrix.  
-⬜ DB migration/version enforcement.  
-⬜ API negotiation/resource compatibility policies.
+### Versioning / Backend Contract
+✅ `schema_version`, runtime/manifest/resource version/checksum concepts.  
+✅ Migration-safe legacy endpoint.  
+✅ Formal contract examples in `docs/runtime-contract.md`.  
+⬜ JSON Schema package and compatibility matrix.  
+⬜ Actual Flask `/runtime/*` server implementation.  
+⬜ API negotiation + conflict/event-ack protocol implementation.
 
-### 19. Backend Contract — CLIENT FOUNDATION
-✅ Contract shape defined: bootstrap/manifest/resources/sync/events/ack.  
-✅ Legacy `https://flutter.alattab.site/api/app-config` preserved.  
-⬜ Actual Flask `/runtime/*` implementation.  
-⬜ Formal JSON Schemas.  
-⬜ Sync response/conflict protocol.  
-⬜ Event acknowledgement contract and rollout.
+### Testing / CI
+✅ CI generation/format/analyze/test/debug-APK pipeline.  
+✅ APK artifact upload.  
+✅ Manifest validation tests.  
+✅ Action-template tests.  
+⬜ API/repository/Drift/sync/conflict tests.  
+⬜ STAC malformed-screen/widget tests.  
+⬜ auth/WebSocket/notification integration tests.  
+⬜ full integration suite.
 
-### 20. Tests — FOUNDATION
-✅ CI analyze/test/build pipeline.  
-✅ Basic runtime tests.  
-⬜ API/repository tests.  
-⬜ Drift tests.  
-⬜ Sync/offline/conflict tests.  
-⬜ Action/workflow tests.  
-⬜ malformed manifest/STAC tests.  
-⬜ WebSocket/auth expiry tests.  
-⬜ widget/integration tests.
+### Release / Security
+✅ Secure-storage/HTTPS/server-authority foundations.  
+✅ Android toolchain compatible with current dependency set.  
+⬜ release signing/AAB automation.  
+⬜ payload/logging hardening audit.  
+⬜ auth token rotation/security review.
 
-### 21. CI/CD — DEBUG PIPELINE COMPLETE
-✅ Flutter setup, dependency install, generation, formatting, analyze, tests, debug APK and artifact upload.  
-⬜ Release signing.  
-⬜ AAB/release artifacts.  
-⬜ Versioned release automation.  
-⬜ Optional Web pipeline.
+## New implementation artifacts
 
-### 22. Security — FOUNDATION
-✅ Secure token storage boundary.  
-✅ HTTPS endpoints.  
-✅ No runtime secrets in source/config.  
-✅ Backend remains authority for permissions.  
-⬜ Logging/payload hardening audit.  
-⬜ Auth refresh/rotation.  
-⬜ Platform security review.
+- `lib/runtime/runtime_contract.dart` — version/schema/resource validation.
+- `lib/actions/action_template.dart` — server-data interpolation.
+- `assets/samples/runtime_form.json` — native STAC server-driven form reference.
+- `docs/runtime-contract.md` — bootstrap/manifest/resources/sync/events contract.
 
 ## Next execution order
 
-1. Dynamic Form Runtime + validation + field state.
-2. Action templating + typed action context + workflow branching.
-3. Resource/data binding and repository-first offline access.
-4. Manual sync protocol, acknowledgements, conflicts and partial resources.
-5. Formal runtime schemas and migration-safe backend contract.
-6. Event acknowledgement/reconnect and notification lifecycle.
-7. Production auth/permissions.
-8. Full unit/widget/integration coverage.
-9. Release APK/AAB pipeline.
+1. Complete dynamic form field mapping, remote options and conditional visibility around STAC native forms.
+2. Build repository/data-source layer so dynamic screens can operate from SQLite offline first.
+3. Implement full manual sync acknowledgement/conflict/partial-resource protocol.
+4. Harden WebSocket reconnect + event acknowledgement + notification action routing.
+5. Complete authentication refresh/401 and permission gating.
+6. Add comprehensive unit/widget/integration coverage.
+7. Implement signed release APK/AAB and versioned release automation.
+8. Add Flask `/runtime/*` implementation and migrate the existing endpoint progressively.
 
 ## Quality gate
 
-No milestone is marked complete until its implementation is exercised by automated tests and `flutter analyze` + `flutter test` + Android debug build remain green.
+A milestone is not marked complete until implementation, tests, `flutter analyze`, `flutter test`, and Android debug build remain green.
