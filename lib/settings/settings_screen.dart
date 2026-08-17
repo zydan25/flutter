@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/local/drift_store.dart';
 import '../sync/sync_engine.dart';
+import 'conflicts_screen.dart';
 import 'diagnostics_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _busy = false;
   String? _lastSync;
   int _pending = 0;
+  int _conflicts = 0;
 
   @override
   void initState() {
@@ -28,22 +30,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final values = await Future.wait<dynamic>([
       widget.store.meta('last_sync'),
       widget.store.pendingCount(),
+      widget.store.pendingConflictCount(),
     ]);
     if (!mounted) return;
     setState(() {
       _lastSync = values[0] as String?;
       _pending = values[1] as int;
+      _conflicts = values[2] as int;
     });
   }
 
   Future<void> _sync() async {
     setState(() => _busy = true);
     try {
-      await widget.sync.manualSync();
+      final result = await widget.sync.manualSync();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تمت المزامنة بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تمت المزامنة • مرفوع: ${result.pendingUploaded} • تعارضات: ${result.conflicts} • مرفوض: ${result.rejected}',
+            ),
+          ),
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -93,6 +101,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             title: const Text('العناصر المعلقة'),
             subtitle: Text('$_pending'),
+          ),
+          ListTile(
+            title: const Text('تعارضات المزامنة'),
+            subtitle: Text('$_conflicts تعارضات معلقة'),
+            leading: const Icon(Icons.sync_problem_outlined),
+            enabled: _conflicts > 0,
+            onTap: _conflicts == 0
+                ? null
+                : () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ConflictsScreen(store: widget.store),
+                      ),
+                    );
+                    await _load();
+                  },
           ),
           Padding(
             padding: const EdgeInsets.all(16),
