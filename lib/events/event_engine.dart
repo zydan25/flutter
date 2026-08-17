@@ -14,6 +14,7 @@ class RuntimeEvent {
     required this.payload,
     this.eventId,
   });
+
   final String type;
   final Map<String, dynamic> payload;
   final String? eventId;
