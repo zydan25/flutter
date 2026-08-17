@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth/auth_service.dart';
@@ -21,7 +20,7 @@ class RuntimeEvent {
 }
 
 class EventEngine {
-  EventEngine(this.auth, {ApiClient? api}) : api = api;
+  EventEngine(this.auth, {this.api});
 
   final AuthService auth;
   final ApiClient? api;
