@@ -95,9 +95,12 @@ class DynamicFormSpec {
     final dependsOn = condition['field']?.toString();
     if (dependsOn == null || dependsOn.isEmpty) return true;
     final actual = values[dependsOn];
-    if (condition.containsKey('equals')) return actual == condition['equals'];
-    if (condition.containsKey('not_equals'))
+    if (condition.containsKey('equals')) {
+      return actual == condition['equals'];
+    }
+    if (condition.containsKey('not_equals')) {
       return actual != condition['not_equals'];
+    }
     return actual == true;
   }
 }
