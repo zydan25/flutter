@@ -41,15 +41,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await widget.sync.manualSync();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تمت المزامنة بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت المزامنة بنجاح')),
+        );
       }
     } catch (error) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('فشلت المزامنة: $error')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشلت المزامنة: $error')),
+        );
+      }
     } finally {
       if (mounted) {
         await _load();
