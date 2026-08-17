@@ -83,7 +83,10 @@ class SyncEngine {
       );
       if (response != null && response.statusCode == 200) {
         for (final row in pending) {
-          await store.markOperation(row['operation_id'] as String, 'acknowledged');
+          await store.markOperation(
+            row['operation_id'] as String,
+            'acknowledged',
+          );
           uploaded++;
         }
       }
