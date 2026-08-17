@@ -2,8 +2,20 @@ import 'package:dio/dio.dart';
 
 import '../../core/runtime_config.dart';
 
+class ApiResult<T> {
+  const ApiResult({
+    required this.statusCode,
+    required this.data,
+    this.headers = const {},
+  });
+
+  final int statusCode;
+  final T? data;
+  final Map<String, List<String>> headers;
+}
+
 class ApiClient {
-  ApiClient({Dio? dio, this._accessTokenProvider})
+  ApiClient({Dio? dio, this._accessTokenProvider, this._onUnauthorized})
     : dio =
           dio ??
           Dio(
@@ -16,6 +28,7 @@ class ApiClient {
 
   final Dio dio;
   final Future<String?> Function()? _accessTokenProvider;
+  final Future<bool> Function()? _onUnauthorized;
 
   Future<Response<dynamic>> request({
     required String method,
@@ -25,6 +38,7 @@ class ApiClient {
     Map<String, dynamic>? headers,
     dynamic body,
     int retries = 2,
+    bool retryAfterUnauthorized = true,
   }) async {
     var resolvedPath = path;
     for (final entry
@@ -40,10 +54,12 @@ class ApiClient {
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       ...?headers,
     };
+
+    var unauthorizedRecovered = false;
     DioException? last;
     for (var attempt = 0; attempt <= retries; attempt++) {
       try {
-        return await dio.request<dynamic>(
+        final response = await dio.request<dynamic>(
           resolvedPath,
           data: body,
           queryParameters: query,
@@ -52,8 +68,25 @@ class ApiClient {
             headers: mergedHeaders,
           ),
         );
+        return response;
       } on DioException catch (error) {
         last = error;
+        if (error.response?.statusCode == 401 &&
+            retryAfterUnauthorized &&
+            !unauthorizedRecovered &&
+            _onUnauthorized != null) {
+          unauthorizedRecovered = true;
+          final recovered = await _onUnauthorized!();
+          if (recovered) {
+            final refreshedToken = await _accessTokenProvider?.call();
+            if (refreshedToken != null && refreshedToken.isNotEmpty) {
+              mergedHeaders['Authorization'] = 'Bearer $refreshedToken';
+              attempt = -1;
+            }
+            continue;
+          }
+        }
+
         final status = error.response?.statusCode ?? 0;
         final retryable =
             error.type == DioExceptionType.connectionTimeout ||
@@ -64,5 +97,29 @@ class ApiClient {
       }
     }
     throw last ?? StateError('Request failed');
+  }
+
+  Future<ApiResult<T>> requestMapped<T>({
+    required String method,
+    required String path,
+    T Function(dynamic value)? map,
+    Map<String, dynamic>? query,
+    Map<String, dynamic>? pathParameters,
+    Map<String, dynamic>? headers,
+    dynamic body,
+  }) async {
+    final response = await request(
+      method: method,
+      path: path,
+      query: query,
+      pathParameters: pathParameters,
+      headers: headers,
+      body: body,
+    );
+    return ApiResult<T>(
+      statusCode: response.statusCode ?? 0,
+      data: map == null ? response.data as T? : map(response.data),
+      headers: response.headers.map,
+    );
   }
 }
