@@ -14,7 +14,7 @@ void main() {
 
     final result = registry.expandNode({
       'type': 'runtime_component',
-      'name': 'hello',
+      'component': 'hello',
       'name': 'Runtime',
     });
 
