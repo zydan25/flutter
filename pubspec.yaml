@@ -32,3 +32,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/samples/bootstrap_schema.json
+    - assets/samples/runtime_manifest.json
