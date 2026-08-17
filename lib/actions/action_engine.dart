@@ -129,11 +129,13 @@ class ActionEngine {
       if (!_passes(step['when'], current.data)) continue;
       try {
         result = await execute(context, step, contextData: current);
+        if (!context.mounted) return result;
         final saveAs = step['save_as'];
         if (saveAs is String && saveAs.isNotEmpty) {
           current = current.merge({saveAs: result});
         }
       } catch (error) {
+        if (!context.mounted) rethrow;
         final fallback = step['on_error'];
         if (fallback is Map) {
           result = await execute(
