@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test-and-build:
@@ -41,24 +41,8 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build
 
-      - name: Format source
-        run: dart format lib test
-
-      - name: Commit formatter changes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/server-driven-runtime-v2'
-        run: |
-          if git diff --quiet; then
-            echo 'No formatter changes.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add lib test
-          git commit -m 'style(runtime): apply dart format'
-          git push origin HEAD:server-driven-runtime-v2
-
       - name: Format check
-        run: git diff --exit-code -- lib test
+        run: dart format --set-exit-if-changed lib test
 
       - name: Analyze
         run: flutter analyze
@@ -69,8 +53,17 @@ jobs:
       - name: Build APK
         run: flutter build apk --debug
 
+      - name: Build Android App Bundle
+        run: flutter build appbundle --debug
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: runtime-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-debug-aab
+          path: build/app/outputs/bundle/debug/app-debug.aab
