@@ -67,9 +67,7 @@ class _ServerDrivenAppState extends State<ServerDrivenApp> {
       if (primary != null && primary.startsWith('#')) {
         final value = int.tryParse(primary.substring(1), radix: 16);
         if (value != null) {
-          scheme = ColorScheme.fromSeed(
-            seedColor: Color(0xFF000000 | value),
-          );
+          scheme = ColorScheme.fromSeed(seedColor: Color(0xFF000000 | value));
         }
       }
     }
