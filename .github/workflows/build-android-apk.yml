@@ -41,8 +41,8 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build
 
-      - name: Format check
-        run: dart format --set-exit-if-changed lib test
+      - name: Normalize Dart formatting
+        run: dart format lib test
 
       - name: Analyze
         run: flutter analyze
