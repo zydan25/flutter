@@ -1,50 +1,101 @@
 import 'package:flutter/material.dart';
 
-import '../core/runtime_config.dart';
 import '../data/local/drift_store.dart';
+import 'diagnostics_service.dart';
 
-class DiagnosticsScreen extends StatelessWidget {
+class DiagnosticsScreen extends StatefulWidget {
   const DiagnosticsScreen({super.key, required this.store});
   final DriftStore store;
 
-  Future<Map<String, String>> _snapshot() async {
-    return {
-      'Runtime version': RuntimeConfig.runtimeVersion,
-      'Schema version': RuntimeConfig.schemaVersion,
-      'Manifest version': await store.meta('manifest_version') ?? '0',
-      'Database version': '1',
-      'Last sync': await store.meta('last_sync') ?? 'never',
-      'Pending operations': '${await store.pendingCount()}',
-      'Cache': (await store.meta('manifest_present')) == '1'
-          ? 'ready'
-          : 'empty',
-      'API': RuntimeConfig.baseUrl,
-      'WebSocket': 'independent / event-only',
-      'Auth': 'secure-storage session',
-    };
+  @override
+  State<DiagnosticsScreen> createState() => _DiagnosticsScreenState();
+}
+
+class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
+  late final DiagnosticsService _service;
+  Future<Map<String, String>>? _snapshot;
+  Future<List<DiagnosticCheck>>? _selfTest;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = DiagnosticsService(widget.store);
+    _reload();
+  }
+
+  void _reload() {
+    _snapshot = _service.snapshot();
+    _selfTest = _service.selfTest();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('تشخيص Runtime')),
-      body: FutureBuilder<Map<String, String>>(
-        future: _snapshot(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return ListView(
-            children: snapshot.data!.entries
-                .map(
-                  (entry) => ListTile(
-                    title: Text(entry.key),
-                    subtitle: Text(entry.value),
-                  ),
-                )
-                .toList(),
-          );
-        },
+      appBar: AppBar(
+        title: const Text('تشخيص Runtime'),
+        actions: [
+          IconButton(
+            tooltip: 'إعادة الفحص',
+            onPressed: () => setState(_reload),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: ListView(
+        children: [
+          FutureBuilder<Map<String, String>>(
+            future: _snapshot,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return Column(
+                children: snapshot.data!.entries
+                    .map(
+                      (entry) => ListTile(
+                        title: Text(entry.key),
+                        subtitle: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+          const Divider(),
+          const ListTile(
+            leading: Icon(Icons.health_and_safety_outlined),
+            title: Text('اختبار سلامة Runtime'),
+          ),
+          FutureBuilder<List<DiagnosticCheck>>(
+            future: _selfTest,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return Column(
+                children: snapshot.data!
+                    .map(
+                      (check) => ListTile(
+                        leading: Icon(
+                          check.ok ? Icons.check_circle : Icons.error,
+                        ),
+                        title: Text(check.name),
+                        subtitle: check.message == null
+                            ? null
+                            : Text(check.message!),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
