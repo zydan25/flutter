@@ -4,8 +4,7 @@ import '../../core/runtime_config.dart';
 
 class ApiClient {
   ApiClient({Dio? dio, Future<String?> Function()? accessTokenProvider})
-    : _accessTokenProvider = accessTokenProvider,
-      dio =
+    : dio =
           dio ??
           Dio(
             BaseOptions(
@@ -13,7 +12,8 @@ class ApiClient {
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 20),
             ),
-          );
+          ),
+      _accessTokenProvider = accessTokenProvider;
 
   final Dio dio;
   final Future<String?> Function()? _accessTokenProvider;
