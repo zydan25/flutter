@@ -89,3 +89,7 @@ lib/
 ```
 
 STAC 1.5.0 is the SDUI foundation used by this runtime. Flutter 3.44.8 / Dart 3.12.2 is the Stable baseline used by CI.
+
+## Validation note
+
+The current runtime head includes the latest Drift, cache-policy, transfer-service, navigation, conflict, retry, notification and permission changes. A fresh CI run on the exact head is the required quality gate before those latest items are promoted from implemented to verified.
