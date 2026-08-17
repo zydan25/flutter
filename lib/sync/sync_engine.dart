@@ -19,29 +19,44 @@ class SyncEngine {
   Future<bool> hasLocalSnapshot() async =>
       (await store.meta('manifest_present')) == '1';
 
+  Future<dynamic> _requestAllowingFallback({
+    required String method,
+    required String path,
+    dynamic body,
+  }) async {
+    try {
+      return await api.request(method: method, path: path, body: body);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> initialSync() async {
     if (await hasLocalSnapshot()) return;
-    final response = await api.request(
+
+    final response = await _requestAllowingFallback(
       method: 'GET',
       path: RuntimeConfig.bootstrapPath,
     );
-    if (response.statusCode != 200) {
-      final legacy = await api.request(
-        method: 'GET',
-        path: RuntimeConfig.legacyConfigPath,
-      );
-      if (legacy.statusCode != 200)
-        throw Exception('Initial bootstrap failed: ${legacy.statusCode}');
-      await saveManifest(
-        legacy.data is Map<String, dynamic>
-            ? legacy.data as Map<String, dynamic>
-            : <String, dynamic>{},
-      );
-      return;
+    if (response != null && response.statusCode == 200) {
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        await saveManifest(data);
+        return;
+      }
     }
-    final data = response.data is Map<String, dynamic>
-        ? response.data as Map<String, dynamic>
-        : <String, dynamic>{};
+
+    final legacy = await _requestAllowingFallback(
+      method: 'GET',
+      path: RuntimeConfig.legacyConfigPath,
+    );
+    if (legacy == null || legacy.statusCode != 200) {
+      throw Exception('Initial bootstrap failed');
+    }
+    final data = legacy.data;
+    if (data is! Map<String, dynamic>) {
+      throw const FormatException('Initial bootstrap returned invalid JSON');
+    }
     await saveManifest(data);
   }
 
@@ -61,40 +76,39 @@ class SyncEngine {
             },
           )
           .toList();
-      try {
-        final response = await api.request(
-          method: 'POST',
-          path: RuntimeConfig.syncPath,
-          body: {'operations': ops},
-        );
-        if (response.statusCode == 200) {
-          for (final row in pending) {
-            await store.markOperation(
-              row['operation_id'] as String,
-              'acknowledged',
-            );
-            uploaded++;
-          }
+      final response = await _requestAllowingFallback(
+        method: 'POST',
+        path: RuntimeConfig.syncPath,
+        body: {'operations': ops},
+      );
+      if (response != null && response.statusCode == 200) {
+        for (final row in pending) {
+          await store.markOperation(row['operation_id'] as String, 'acknowledged');
+          uploaded++;
         }
-      } catch (_) {}
+      }
     }
 
-    final response = await api.request(
+    var response = await _requestAllowingFallback(
       method: 'GET',
       path: RuntimeConfig.manifestPath,
     );
-    if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-      final manifest = response.data as Map<String, dynamic>;
-      await saveManifest(manifest);
+    if (response?.statusCode == 200 && response?.data is Map<String, dynamic>) {
+      await saveManifest(response!.data as Map<String, dynamic>);
       return SyncResult(changed: 1, pendingUploaded: uploaded);
     }
-    final legacy = await api.request(
+
+    response = await _requestAllowingFallback(
       method: 'GET',
       path: RuntimeConfig.legacyConfigPath,
     );
-    if (legacy.statusCode != 200)
-      throw Exception('Manual sync failed: ${legacy.statusCode}');
-    await saveManifest(legacy.data as Map<String, dynamic>);
+    if (response == null || response.statusCode != 200) {
+      throw Exception('Manual sync failed');
+    }
+    if (response.data is! Map<String, dynamic>) {
+      throw const FormatException('Manual sync returned invalid JSON');
+    }
+    await saveManifest(response.data as Map<String, dynamic>);
     return SyncResult(changed: 1, pendingUploaded: uploaded);
   }
 
