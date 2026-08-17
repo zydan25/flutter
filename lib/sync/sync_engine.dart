@@ -116,7 +116,8 @@ class SyncEngine {
                 if (entity != null && result.serverData != null) {
                   await store.saveResource(
                     id: entity,
-                    version: result.serverVersion ??
+                    version:
+                        result.serverVersion ??
                         int.tryParse('${row['base_version'] ?? 0}') ??
                         0,
                     checksum: '${result.serverVersion ?? ''}',
