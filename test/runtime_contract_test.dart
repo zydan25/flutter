@@ -52,7 +52,7 @@ void main() {
   test('action templates resolve nested server data', () {
     final resolved = ActionTemplate.resolve(
       {
-        'url': '/customers/${customer.id}',
+        'url': '/customers/\${customer.id}',
         'body': {'name': r'${customer.name}'},
       },
       {
