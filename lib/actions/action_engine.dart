@@ -5,8 +5,10 @@ import '../auth/auth_service.dart';
 import '../data/api/api_client.dart';
 import '../data/local/drift_store.dart';
 import '../device/capability_bridge.dart';
+import '../permissions/permission_service.dart';
 import '../sync/sync_engine.dart';
 import 'action_template.dart';
+import 'action_transaction.dart';
 
 class ActionContext {
   const ActionContext({this.data = const {}});
@@ -24,13 +26,15 @@ class ActionEngine {
     required this.sync,
     required this.auth,
     required this.capabilities,
-  });
+    PermissionService? permissions,
+  }) : permissions = permissions ?? PermissionService();
 
   final ApiClient api;
   final DriftStore store;
   final SyncEngine sync;
   final AuthService auth;
   final CapabilityBridge capabilities;
+  final PermissionService permissions;
 
   Future<dynamic> execute(
     BuildContext context,
@@ -39,6 +43,10 @@ class ActionEngine {
   }) async {
     final resolved = (ActionTemplate.resolve(action, contextData.data) as Map)
         .cast<String, dynamic>();
+    if (!permissions.canExecuteAction(resolved)) {
+      throw StateError('Permission denied for runtime action');
+    }
+
     final type = '${resolved['type'] ?? resolved['action'] ?? ''}';
 
     switch (type) {
@@ -56,6 +64,7 @@ class ActionEngine {
           method: '${resolved['method'] ?? 'GET'}',
           path: '${resolved['url'] ?? '/'}',
           query: (resolved['query'] as Map?)?.cast<String, dynamic>(),
+          pathParameters: (resolved['path'] as Map?)?.cast<String, dynamic>(),
           headers: (resolved['headers'] as Map?)?.cast<String, dynamic>(),
           body: resolved['body'] ?? contextData.data,
         );
@@ -105,7 +114,19 @@ class ActionEngine {
           (resolved['args'] as Map?)?.cast<String, dynamic>() ?? const {},
         );
       case 'set_state':
-        return resolved['value'];
+        final key = resolved['key']?.toString();
+        if (key == null || key.isEmpty) {
+          return resolved['value'];
+        }
+        final transaction = ActionTransaction(store);
+        try {
+          await transaction.setMeta(key, '${resolved['value'] ?? ''}');
+          transaction.commit();
+          return resolved['value'];
+        } catch (_) {
+          await transaction.rollback();
+          rethrow;
+        }
       case 'workflow':
         return _workflow(context, resolved, contextData);
       default:
@@ -122,33 +143,38 @@ class ActionEngine {
     final seed = workflow['context'];
     if (seed is Map) current = current.merge(seed.cast<String, dynamic>());
 
+    final transaction = ActionTransaction(store);
     dynamic result;
     final steps = (workflow['steps'] as List?) ?? const [];
-    for (final raw in steps.whereType<Map>()) {
-      final step = raw.cast<String, dynamic>();
-      if (!_passes(step['when'], current.data)) continue;
-      try {
+    try {
+      for (final raw in steps.whereType<Map>()) {
+        final step = raw.cast<String, dynamic>();
+        if (!_passes(step['when'], current.data)) continue;
         result = await execute(context, step, contextData: current);
-        if (!context.mounted) return result;
+        if (!context.mounted) {
+          await transaction.rollback();
+          return result;
+        }
         final saveAs = step['save_as'];
         if (saveAs is String && saveAs.isNotEmpty) {
           current = current.merge({saveAs: result});
         }
-      } catch (error) {
-        if (!context.mounted) rethrow;
-        final fallback = step['on_error'];
-        if (fallback is Map) {
-          result = await execute(
-            context,
-            fallback.cast<String, dynamic>(),
-            contextData: current.merge({'error': '$error'}),
-          );
-        } else {
-          rethrow;
-        }
       }
+      transaction.commit();
+      return result;
+    } catch (error) {
+      await transaction.rollback();
+      if (!context.mounted) rethrow;
+      final fallback = workflow['on_error'];
+      if (fallback is Map) {
+        return execute(
+          context,
+          fallback.cast<String, dynamic>(),
+          contextData: current.merge({'error': '$error'}),
+        );
+      }
+      rethrow;
     }
-    return result;
   }
 
   bool _passes(dynamic condition, Map<String, dynamic> data) {
