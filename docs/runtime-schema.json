@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flutter.alattab.site/runtime/schema/v1",
+  "title": "Flutter Server-Driven Runtime Manifest",
+  "type": "object",
+  "required": ["schema_version", "screens"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1, "maximum": 1 },
+    "version": { "type": "integer", "minimum": 0 },
+    "manifest_version": { "type": "integer", "minimum": 0 },
+    "checksum": { "type": "string" },
+    "app_name": { "type": "string" },
+    "home_screen": { "type": "string" },
+    "theme": { "type": "object" },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["resource_id", "version"],
+        "properties": {
+          "resource_id": { "type": "string", "minLength": 1 },
+          "version": { "type": "integer", "minimum": 0 },
+          "checksum": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "data": {}
+        },
+        "additionalProperties": true
+      }
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "permission": { "type": "string" },
+          "feature_flag": { "type": "string" },
+          "stac": { "type": "object" },
+          "components": { "type": "array" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
