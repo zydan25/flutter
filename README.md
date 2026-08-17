@@ -88,4 +88,4 @@ lib/
 └── sync/           snapshot/queue/manual sync engine
 ```
 
-STAC 1.5.0 is the SDUI foundation used by this runtime. Flutter 3.44.7 is pinned in CI for reproducible builds.
+STAC 1.5.0 is the SDUI foundation used by this runtime. Flutter 3.44.8 / Dart 3.12.2 is the Stable baseline used by CI.
