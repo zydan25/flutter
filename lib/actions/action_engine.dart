@@ -29,8 +29,8 @@ class ActionEngine {
     required this.capabilities,
     PermissionService? permissions,
     TransferService? transfer,
-  }) : permissions = permissions ?? PermissionService(),
-       transfer = transfer ?? TransferService(api);
+  })  : permissions = permissions ?? PermissionService(),
+        transfer = transfer ?? TransferService(api);
 
   final ApiClient api;
   final DriftStore store;
@@ -39,6 +39,43 @@ class ActionEngine {
   final CapabilityBridge capabilities;
   final PermissionService permissions;
   final TransferService transfer;
+
+  Future<String?> _resolveApiBaseUrl(Map<String, dynamic> action) async {
+    final explicit = action['base_url']?.toString().trim();
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+
+    final manifest = await store.resource('runtime_manifest');
+    if (manifest == null) return null;
+    final apiConfig = manifest['api'];
+    if (apiConfig is! Map) return null;
+
+    final profileSlug = action['api_profile']?.toString();
+    final profiles = apiConfig['profiles'];
+    if (profileSlug != null && profiles is List) {
+      for (final raw in profiles) {
+        if (raw is Map && '${raw['slug']}' == profileSlug) {
+          final base = raw['base_url']?.toString().trim();
+          if (base != null && base.isNotEmpty) return base;
+        }
+      }
+    }
+
+    final defaultProfile = apiConfig['default_profile'];
+    if (defaultProfile is Map) {
+      final base = defaultProfile['base_url']?.toString().trim();
+      if (base != null && base.isNotEmpty) return base;
+    }
+    return null;
+  }
+
+  String _resolvePath(String path, String? baseUrl) {
+    final uri = Uri.tryParse(path);
+    if (uri != null && uri.hasScheme) return path;
+    if (baseUrl == null || baseUrl.isEmpty) return path;
+    return Uri.parse('${baseUrl.replaceFirst(RegExp(r'/+$'), '')}/')
+        .resolve(path.replaceFirst(RegExp(r'^/+'), ''))
+        .toString();
+  }
 
   Future<dynamic> execute(
     BuildContext context,
@@ -64,9 +101,10 @@ class ActionEngine {
         return null;
       case 'api':
       case 'networkRequest':
+        final baseUrl = await _resolveApiBaseUrl(resolved);
         return api.request(
           method: '${resolved['method'] ?? 'GET'}',
-          path: '${resolved['url'] ?? '/'}',
+          path: _resolvePath('${resolved['url'] ?? '/'}', baseUrl),
           query: (resolved['query'] as Map?)?.cast<String, dynamic>(),
           pathParameters: (resolved['path'] as Map?)?.cast<String, dynamic>(),
           headers: (resolved['headers'] as Map?)?.cast<String, dynamic>(),
@@ -78,8 +116,9 @@ class ActionEngine {
         if (filePath == null || filePath.isEmpty || path == null || path.isEmpty) {
           throw ArgumentError('upload action requires file_path and url');
         }
+        final baseUrl = await _resolveApiBaseUrl(resolved);
         return transfer.upload(
-          path: path,
+          path: _resolvePath(path, baseUrl),
           filePath: filePath,
           field: resolved['field']?.toString() ?? 'file',
           fields: (resolved['fields'] as Map?)?.cast<String, dynamic>(),
@@ -89,8 +128,9 @@ class ActionEngine {
         if (path == null || path.isEmpty) {
           throw ArgumentError('download action requires url');
         }
+        final baseUrl = await _resolveApiBaseUrl(resolved);
         return transfer.download(
-          path: path,
+          path: _resolvePath(path, baseUrl),
           fileName: resolved['file_name']?.toString(),
         );
       case 'dialog':
