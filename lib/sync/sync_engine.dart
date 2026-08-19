@@ -48,6 +48,34 @@ class SyncEngine {
     }
   }
 
+  Future<void> _hydrateRemoteRuntime({required Map<String, dynamic> bootstrap}) async {
+    final manifestResponse = await _requestAllowingFallback(
+      method: 'GET',
+      path: RuntimeConfig.manifestPath,
+    );
+    if (manifestResponse == null || manifestResponse.statusCode != 200) {
+      throw Exception('Runtime manifest request failed');
+    }
+    if (manifestResponse.data is! Map<String, dynamic>) {
+      throw const FormatException('Runtime manifest returned invalid JSON');
+    }
+
+    final manifest = Map<String, dynamic>.from(
+      manifestResponse.data as Map<String, dynamic>,
+    );
+    manifest['bootstrap'] = bootstrap;
+
+    final resourcesResponse = await _requestAllowingFallback(
+      method: 'GET',
+      path: RuntimeConfig.resourcesPath,
+    );
+    if (resourcesResponse?.statusCode == 200 &&
+        resourcesResponse?.data is Map<String, dynamic>) {
+      manifest['resources'] = resourcesResponse!.data['resources'] ?? {};
+    }
+    await saveManifest(manifest);
+  }
+
   Future<void> initialSync() async {
     if (await hasLocalSnapshot()) return;
 
@@ -55,12 +83,14 @@ class SyncEngine {
       method: 'GET',
       path: RuntimeConfig.bootstrapPath,
     );
-    if (response != null && response.statusCode == 200) {
-      final data = response.data;
-      if (data is Map<String, dynamic>) {
-        await saveManifest(data);
-        return;
-      }
+    if (response != null && response.statusCode == 200 &&
+        response.data is Map<String, dynamic>) {
+      await _hydrateRemoteRuntime(
+        bootstrap: Map<String, dynamic>.from(
+          response.data as Map<String, dynamic>,
+        ),
+      );
+      return;
     }
 
     final legacy = await _requestAllowingFallback(
@@ -106,8 +136,11 @@ class SyncEngine {
 
       if (response != null && response.statusCode == 200) {
         final data = response.data;
-        if (data is Map<String, dynamic> && data['operations'] is List) {
-          final parsed = SyncResponse.fromJson(data);
+        if (data is Map<String, dynamic> && data['results'] is List) {
+          final parsed = SyncResponse.fromJson({
+            'operations': data['results'],
+            'resources': data['resources'] ?? const [],
+          });
           for (final result in parsed.operations) {
             final row = pending.firstWhere(
               (item) => item['operation_id'] == result.operationId,
@@ -120,19 +153,6 @@ class SyncEngine {
               case SyncOperationStatus.acknowledged:
                 await store.markOperation(operationId, 'acknowledged');
                 uploaded++;
-                final entity = row['entity']?.toString();
-                if (entity != null && result.serverData != null) {
-                  await store.saveResource(
-                    id: entity,
-                    version:
-                        result.serverVersion ??
-                        int.tryParse('${row['base_version'] ?? 0}') ??
-                        0,
-                    checksum: '${result.serverVersion ?? ''}',
-                    payload: result.serverData!,
-                    updatedAt: DateTime.now().toUtc().toIso8601String(),
-                  );
-                }
                 break;
               case SyncOperationStatus.conflict:
                 await store.markOperation(operationId, 'conflict');
@@ -142,9 +162,8 @@ class SyncEngine {
                   entityId: row['entity_id']?.toString(),
                   baseVersion: int.tryParse('${row['base_version'] ?? ''}'),
                   serverVersion: result.serverVersion,
-                  localPayload:
-                      (jsonDecode(row['payload'] as String) as Map)
-                          .cast<String, dynamic>(),
+                  localPayload: (jsonDecode(row['payload'] as String) as Map)
+                      .cast<String, dynamic>(),
                   serverPayload: result.conflictData ?? result.serverData,
                 );
                 conflicts++;
@@ -155,8 +174,9 @@ class SyncEngine {
                   await store.scheduleRetry(
                     operationId,
                     retryCount: nextCount,
-                    nextRetryAt:
-                        DateTime.now().toUtc().add(retryPolicy.delayFor(retryCount)),
+                    nextRetryAt: DateTime.now()
+                        .toUtc()
+                        .add(retryPolicy.delayFor(retryCount)),
                     error: result.message,
                   );
                 } else {
@@ -174,28 +194,18 @@ class SyncEngine {
                 break;
             }
           }
-          for (final resource in parsed.resources) {
-            final id = resource['resource_id'] ?? resource['id'];
-            if (id is String && id.isNotEmpty && resource['data'] is Map) {
-              await store.saveResource(
-                id: id,
-                version: int.tryParse('${resource['version'] ?? 0}') ?? 0,
-                checksum: '${resource['checksum'] ?? ''}',
-                payload: (resource['data'] as Map).cast<String, dynamic>(),
-                updatedAt: resource['updated_at']?.toString(),
-              );
-            }
-          }
         }
       }
     }
 
-    var response = await _requestAllowingFallback(
+    final response = await _requestAllowingFallback(
       method: 'GET',
       path: RuntimeConfig.manifestPath,
     );
     if (response?.statusCode == 200 && response?.data is Map<String, dynamic>) {
-      await saveManifest(response!.data as Map<String, dynamic>);
+      await _hydrateRemoteRuntime(
+        bootstrap: const <String, dynamic>{},
+      );
       return SyncResult(
         changed: 1,
         pendingUploaded: uploaded,
@@ -205,17 +215,17 @@ class SyncEngine {
       );
     }
 
-    response = await _requestAllowingFallback(
+    final legacy = await _requestAllowingFallback(
       method: 'GET',
       path: RuntimeConfig.legacyConfigPath,
     );
-    if (response == null || response.statusCode != 200) {
+    if (legacy == null || legacy.statusCode != 200) {
       throw Exception('Manual sync failed');
     }
-    if (response.data is! Map<String, dynamic>) {
+    if (legacy.data is! Map<String, dynamic>) {
       throw const FormatException('Manual sync returned invalid JSON');
     }
-    await saveManifest(response.data as Map<String, dynamic>);
+    await saveManifest(legacy.data as Map<String, dynamic>);
     return SyncResult(
       changed: 1,
       pendingUploaded: uploaded,
@@ -226,8 +236,7 @@ class SyncEngine {
   }
 
   Future<void> saveManifest(Map<String, dynamic> manifest) async {
-    final version =
-        int.tryParse(
+    final version = int.tryParse(
           '${manifest['version'] ?? manifest['manifest_version'] ?? 0}',
         ) ??
         0;
